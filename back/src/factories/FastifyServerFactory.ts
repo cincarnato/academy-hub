@@ -20,6 +20,8 @@ import {CrudSavedQueryFastifyRoutes} from "@drax/crud-back";
 import {GoogleFastifyRoutes} from "../modules/google/routes/GoogleRoutes.js"
 import {HealthRoutes} from "../modules/base/routes/HealthRoutes.js"
 import {NotificationFastifyRoutes} from "../modules/base/routes/NotificationRoutes.js"
+import {ResourceCatalogFastifyRoutes} from "../modules/trainer/routes/ResourceCatalogRoutes.js"
+import {TrainingFastifyRoutes} from "../modules/trainer/routes/TrainingRoutes.js"
 
 function FastifyServerFactory(rootDir:string) {
     const server = new FastifyServer(rootDir);
@@ -52,6 +54,8 @@ function FastifyServerFactory(rootDir:string) {
     server.fastifyRegister(GoogleFastifyRoutes)
     server.fastifyRegister(HealthRoutes)
     server.fastifyRegister(NotificationFastifyRoutes)
+    server.fastifyRegister(ResourceCatalogFastifyRoutes)
+    server.fastifyRegister(TrainingFastifyRoutes)
 
 
 

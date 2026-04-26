@@ -1,0 +1,220 @@
+
+import {EntityCrud, useCrudStore} from "@drax/crud-vue";
+import type{
+  IDraxCrudProvider,
+  IEntityCrud,
+  IEntityCrudField,
+  IEntityCrudFilter,
+  IEntityCrudHeader, 
+  IEntityCrudPermissions,
+  IEntityCrudRefs,
+  IEntityCrudRules
+} from "@drax/crud-share";
+import TrainingProvider from "../providers/TrainingProvider";
+
+//Import EntityCrud Refs
+
+
+class TrainingCrud extends EntityCrud implements IEntityCrud {
+
+  static singleton: TrainingCrud
+  private store
+
+  constructor() {
+    super();
+    this.name = 'Training'
+    this.store = useCrudStore(this.name)
+  }
+  
+  static get instance(): TrainingCrud {
+    if(!TrainingCrud.singleton){
+      TrainingCrud.singleton = new TrainingCrud()
+    }
+    return TrainingCrud.singleton
+  }
+
+  get permissions(): IEntityCrudPermissions{
+    return {
+      manage: 'training:manage', 
+      view: 'training:view', 
+      create: 'training:create', 
+      update: 'training:update', 
+      delete: 'training:delete'
+    }
+  }
+
+  get headers(): IEntityCrudHeader[] {
+    return [
+        {title: 'name',key:'name', align: 'start'},
+{title: 'slug',key:'slug', align: 'start'},
+{title: 'status',key:'status', align: 'start'},
+{title: 'category',key:'category', align: 'start'},
+{title: 'author',key:'author', align: 'start'},
+{title: 'isPublic',key:'isPublic', align: 'start'},
+{title: 'publishedAt',key:'publishedAt', align: 'start'}
+    ]
+  }
+  
+  get selectedHeaders(): string[] {
+    return this.headers.map(header => header.key)
+  }
+  
+  get actionHeaders():IEntityCrudHeader[]{
+    return [
+      {
+        title: 'action.actions',
+        key: 'actions',
+        sortable: false,
+        align: 'center',
+        minWidth: '190px',
+        fixed: 'end'
+      },
+    ]
+  }
+
+  get provider(): IDraxCrudProvider<any, any, any>{
+    return TrainingProvider.instance
+  }
+  
+  get refs(): IEntityCrudRefs{
+    return {
+      
+    }
+  }
+
+  get rules():IEntityCrudRules{
+    return {
+      name: [(v: any) => !!v || 'validation.required'],
+status: [(v: any) => !!v || 'validation.required'],
+slides: []
+    }
+  }
+
+  get fields(): IEntityCrudField[]{
+    return [
+        {name:'name',type:'string',label:'name',default:'',groupTab: 'General'},
+{name:'slug',type:'string',label:'slug',default:'',groupTab: 'General'},
+{name:'description',type:'longString',label:'description',default:'',groupTab: 'General'},
+{name:'status',type:'enum',label:'status',default:'draft',groupTab: 'General',enum: ['draft', 'published', 'archived']},
+{name:'category',type:'string',label:'category',default:'',groupTab: 'General'},
+{name:'tags',type:'array.string',label:'tags',default:[],groupTab: 'General'},
+{name:'author',type:'string',label:'author',default:'',groupTab: 'General'},
+{name:'slides',type:'array.object',label:'slides',default:[],groupTab: 'Content',objectFields: [{name:'title',type:'string',label:'title',default:''},
+{name:'subtitle',type:'string',label:'subtitle',default:''},
+{name:'content',type:'longString',label:'content',default:''},
+{name:'contentType',type:'enum',label:'contentType',default:'markdown',enum: ['html', 'markdown']},
+{name:'files',type:'array.fullFile',label:'files',default:null},
+{name:'order',type:'number',label:'order',default:null},
+{name:'speakerNotes',type:'longString',label:'speakerNotes',default:''},
+{name:'quiz',type:'array.object',label:'quiz',default:[],objectFields: [{name:'question',type:'string',label:'question',default:''},
+{name:'description',type:'longString',label:'description',default:''},
+{name:'type',type:'enum',label:'type',default:null,enum: ['single_choice', 'multiple_choice', 'open_text']},
+{name:'answers',type:'array.object',label:'answers',default:[],objectFields: [{name:'answer',type:'string',label:'answer',default:''},
+{name:'points',type:'number',label:'points',default:null},
+{name:'isCorrect',type:'boolean',label:'isCorrect',default:false},
+{name:'feedback',type:'longString',label:'feedback',default:''}]},
+{name:'required',type:'boolean',label:'required',default:false},
+{name:'explanation',type:'longString',label:'explanation',default:''}]},
+{name:'enabled',type:'boolean',label:'enabled',default:true}]},
+{name:'primaryColor',type:'string',label:'primaryColor',default:'',groupTab: 'Publication'},
+{name:'coverImageUrl',type:'string',label:'coverImageUrl',default:'',groupTab: 'Publication'},
+{name:'isPublic',type:'boolean',label:'isPublic',default:false,groupTab: 'Publication'},
+{name:'publishedAt',type:'date',label:'publishedAt',default:null,groupTab: 'Publication'},
+{name:'metadata',type:'record',label:'metadata',default:null,groupTab: 'Advanced'}
+    ]
+  }
+  
+  get filters():IEntityCrudFilter[]{
+    return [
+      //{name: '_id', type: 'string', label: 'ID', default: '', operator: 'eq' },
+    ]
+  }
+  
+  get isViewable(){
+    return true
+  }
+
+  get isEditable(){
+    return true
+  }
+
+  get isCreatable(){
+    return true
+  }
+
+  get isDeletable(){
+    return true
+  }
+
+  get isExportable(){
+    return true
+  }
+
+  get exportFormats(){
+    return ['CSV', 'JSON']
+  }
+
+  get exportHeaders(){
+    return ['_id']
+  }
+
+  get isImportable(){
+    return false
+  }
+  
+  get isColumnSelectable() {
+    return true
+  }
+
+  get isGroupable() {
+    return true
+  }
+
+  get importFormats(){
+    return ['CSV', 'JSON']
+  }
+
+  get dialogFullscreen(){
+    return false
+  }
+  
+  get tabs() {
+    return [
+     'General', 'Content', 'Publication', 'Advanced'
+    ]
+  }
+  
+  get menus() {
+    return [
+     
+    ]
+  }
+  
+  get searchEnable() {
+    return true
+  }
+
+   get filtersEnable(){
+    return true
+  }
+
+  get dynamicFiltersEnable(){
+    return true
+  }
+
+  get isAiAssistable(){
+    return false
+  }
+
+  get navigationOperations(){
+    return ['view'] // edit, delete
+  }
+  
+  get isSavedQueriesEnabled(){
+    return true
+  }
+
+}
+
+export default TrainingCrud
+

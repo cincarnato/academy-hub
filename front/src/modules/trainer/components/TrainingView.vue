@@ -1,0 +1,457 @@
+<script setup lang="ts">
+import {computed, onMounted, ref, watch} from "vue";
+import TrainingProvider from "../providers/TrainingProvider";
+import type {ITraining} from "../interfaces/ITraining";
+
+interface Props {
+  trainingId: string
+}
+
+type TrainingSlide = NonNullable<ITraining["slides"]>[number]
+
+const props = defineProps<Props>()
+const provider = TrainingProvider.instance
+
+const loading = ref(false)
+const error = ref("")
+const training = ref<ITraining | null>(null)
+const activeSlideIndex = ref(0)
+const showQuiz = ref(false)
+const openTextAnswers = ref<Record<string, string>>({})
+const selectedAnswers = ref<Record<string, Array<number>>>({})
+
+const slides = computed(() => {
+  return [...(training.value?.slides || [])]
+    .filter((slide) => slide.enabled !== false)
+    .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+})
+
+const activeSlide = computed(() => slides.value[activeSlideIndex.value] || null)
+const activeQuiz = computed(() => activeSlide.value?.quiz || [])
+const canGoPrev = computed(() => activeSlideIndex.value > 0)
+const canGoNext = computed(() => activeSlideIndex.value < slides.value.length - 1)
+const totalSlides = computed(() => slides.value.length)
+
+async function loadTraining() {
+  if (!props.trainingId) {
+    training.value = null
+    error.value = "No se recibió un identificador de entrenamiento."
+    return
+  }
+
+  loading.value = true
+  error.value = ""
+
+  try {
+    training.value = await provider.findById(props.trainingId)
+    activeSlideIndex.value = 0
+    showQuiz.value = false
+  } catch (err) {
+    console.error("Error loading training:", err)
+    training.value = null
+    error.value = "No fue posible cargar este entrenamiento en este momento."
+  } finally {
+    loading.value = false
+  }
+}
+
+function goToSlide(index: number) {
+  if (index < 0 || index >= slides.value.length) return
+  activeSlideIndex.value = index
+}
+
+function goToPrevSlide() {
+  if (!canGoPrev.value) return
+  goToSlide(activeSlideIndex.value - 1)
+}
+
+function goToNextSlide() {
+  if (!canGoNext.value) return
+  goToSlide(activeSlideIndex.value + 1)
+}
+
+function renderSlideContent(slide: TrainingSlide) {
+  return slide.content || ""
+}
+
+function hasQuiz(slide: TrainingSlide | null) {
+  return Boolean(slide?.quiz?.length)
+}
+
+function getQuizKey(quizIndex: number) {
+  return `${activeSlideIndex.value}-${quizIndex}`
+}
+
+function getSelectedAnswers(quizIndex: number) {
+  return selectedAnswers.value[getQuizKey(quizIndex)] || []
+}
+
+function setSingleAnswer(quizIndex: number, answerIndex: number | null) {
+  const key = getQuizKey(quizIndex)
+  selectedAnswers.value[key] = answerIndex === null ? [] : [answerIndex]
+}
+
+function toggleMultipleAnswer(quizIndex: number, answerIndex: number, checked: boolean | null) {
+  const key = getQuizKey(quizIndex)
+  const current = new Set(selectedAnswers.value[key] || [])
+
+  if (checked) current.add(answerIndex)
+  else current.delete(answerIndex)
+
+  selectedAnswers.value[key] = Array.from(current)
+}
+
+function getOpenTextAnswer(quizIndex: number) {
+  return openTextAnswers.value[getQuizKey(quizIndex)] || ""
+}
+
+function setOpenTextAnswer(quizIndex: number, value: string) {
+  openTextAnswers.value[getQuizKey(quizIndex)] = value
+}
+
+function getFileLabel(filepath?: string) {
+  if (!filepath) return "Archivo"
+  return filepath.split("/").pop() || filepath
+}
+
+watch(() => props.trainingId, () => {
+  void loadTraining()
+})
+
+watch(activeSlideIndex, () => {
+  showQuiz.value = false
+})
+
+onMounted(() => {
+  void loadTraining()
+})
+</script>
+
+<template>
+  <v-container fluid class="px-0">
+    <v-container class="py-4 py-md-8">
+      <v-skeleton-loader
+        v-if="loading"
+        type="article, image, actions"
+        class="mx-auto"
+        max-width="1400"
+      />
+
+      <v-alert
+        v-else-if="error"
+        type="error"
+        variant="tonal"
+        border="start"
+        class="mx-auto"
+        max-width="1400"
+      >
+        {{ error }}
+      </v-alert>
+
+      <template v-else-if="training">
+        <v-card class="mx-auto" max-width="1400" rounded="xl">
+          <v-card-item class="pa-4 pa-md-6">
+            <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
+              <div>
+                <div class="d-flex flex-wrap align-center ga-2 mb-3">
+                  <v-chip v-if="training.category" size="small" variant="flat" color="primary">
+                    {{ training.category }}
+                  </v-chip>
+                  <v-chip v-if="training.status" size="small" variant="outlined">
+                    {{ training.status }}
+                  </v-chip>
+                </div>
+
+                <h1 class="text-h5 text-md-h3 font-weight-bold mb-2">
+                  {{ training.name }}
+                </h1>
+
+                <p v-if="training.description" class="text-body-2 text-md-body-1 text-medium-emphasis mb-0">
+                  {{ training.description }}
+                </p>
+              </div>
+
+              <div class="text-body-2 text-medium-emphasis">
+                {{ activeSlideIndex + 1 }} / {{ totalSlides }} slides
+              </div>
+            </div>
+          </v-card-item>
+
+          <v-divider />
+
+          <v-card-text class="pa-3 pa-md-4">
+            <v-slide-group
+              v-model="activeSlideIndex"
+              selected-class="slide-chip-active"
+              show-arrows
+              center-active
+            >
+              <v-slide-group-item
+                v-for="(slide, index) in slides"
+                :key="`${slide.order}-${slide.title}-${index}`"
+                v-slot="{ toggle }"
+                :value="index"
+              >
+                <v-btn
+                  variant="text"
+                  rounded="pill"
+                  class="mr-2 text-none"
+                  @click="toggle(); goToSlide(index)"
+                >
+                  <span class="slide-chip-index mr-2">{{ index + 1 }}</span>
+                  <span class="text-truncate">{{ slide.title || `Slide ${index + 1}` }}</span>
+                </v-btn>
+              </v-slide-group-item>
+            </v-slide-group>
+          </v-card-text>
+
+          <v-divider />
+
+          <template v-if="activeSlide">
+            <v-card-text class="pa-3 pa-md-6">
+              <div class="d-none d-md-flex align-center justify-space-between mb-4">
+                <v-btn
+                  icon="mdi-chevron-left"
+                  variant="tonal"
+                  :disabled="!canGoPrev"
+                  @click="goToPrevSlide"
+                />
+
+                <v-btn
+                  icon="mdi-chevron-right"
+                  variant="tonal"
+                  :disabled="!canGoNext"
+                  @click="goToNextSlide"
+                />
+              </div>
+
+              <v-card variant="outlined" rounded="xl">
+                <v-card-text class="pa-4 pa-md-6">
+                  <div class="mb-4">
+                    <div class="text-overline">Slide {{ activeSlideIndex + 1 }}</div>
+                    <h2 class="text-h6 text-md-h5 font-weight-bold mb-1">
+                      {{ activeSlide.title || `Slide ${activeSlideIndex + 1}` }}
+                    </h2>
+                    <p v-if="activeSlide.subtitle" class="text-body-2 text-md-body-1 text-medium-emphasis mb-0">
+                      {{ activeSlide.subtitle }}
+                    </p>
+                  </div>
+
+                  <div
+                    v-if="activeSlide.contentType === 'html'"
+                    class="slide-body slide-body-html"
+                    v-html="renderSlideContent(activeSlide)"
+                  />
+
+                  <div
+                    v-else
+                    class="slide-body slide-body-markdown"
+                  >
+                    {{ renderSlideContent(activeSlide) }}
+                  </div>
+
+                  <div
+                    v-if="activeSlide.files?.length"
+                    class="mt-6"
+                  >
+                    <div class="text-subtitle-2 font-weight-medium mb-3">Material adjunto</div>
+                    <v-row dense>
+                      <v-col
+                        v-for="file in activeSlide.files"
+                        :key="file.url"
+                        cols="12"
+                        sm="6"
+                        md="4"
+                      >
+                        <v-card variant="outlined" class="h-100">
+                          <v-card-text class="pa-4">
+                            <div class="text-body-2 font-weight-medium mb-1">
+                              {{ file.filename || getFileLabel(file.filepath) }}
+                            </div>
+                            <div class="text-caption text-medium-emphasis mb-3">
+                              {{ file.mimetype || "Archivo" }}
+                            </div>
+                            <v-btn
+                              :href="file.url"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              size="small"
+                              variant="tonal"
+                            >
+                              Abrir archivo
+                            </v-btn>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                  </div>
+
+                  <div
+                    v-if="hasQuiz(activeSlide)"
+                    class="mt-8"
+                  >
+                    <v-divider class="mb-4" />
+
+                    <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3 mb-4">
+                      <div>
+                        <div class="text-subtitle-1 font-weight-bold">Quiz del slide</div>
+                        <div class="text-body-2 text-medium-emphasis">
+                          {{ activeQuiz.length }} pregunta<span v-if="activeQuiz.length !== 1">s</span>
+                        </div>
+                      </div>
+
+                      <v-btn
+                        variant="flat"
+                        color="primary"
+                        @click="showQuiz = !showQuiz"
+                      >
+                        {{ showQuiz ? "Ocultar quiz" : "Iniciar quiz" }}
+                      </v-btn>
+                    </div>
+
+                    <div v-if="showQuiz" class="d-flex flex-column ga-4">
+                      <v-card
+                        v-for="(question, quizIndex) in activeQuiz"
+                        :key="`${question.question}-${quizIndex}`"
+                        variant="outlined"
+                        rounded="xl"
+                      >
+                        <v-card-text class="pa-4 pa-md-5">
+                          <div class="text-overline mb-2">Pregunta {{ quizIndex + 1 }}</div>
+                          <div class="text-subtitle-1 font-weight-bold mb-2">
+                            {{ question.question }}
+                          </div>
+                          <p v-if="question.description" class="text-body-2 text-medium-emphasis mb-4">
+                            {{ question.description }}
+                          </p>
+
+                          <div v-if="question.type === 'single_choice'" class="d-flex flex-column ga-3">
+                            <v-radio-group
+                              :model-value="getSelectedAnswers(quizIndex)[0] ?? null"
+                              color="primary"
+                              hide-details
+                              @update:model-value="setSingleAnswer(quizIndex, $event)"
+                            >
+                              <v-radio
+                                v-for="(answer, answerIndex) in question.answers || []"
+                                :key="`${answer.answer}-${answerIndex}`"
+                                :label="answer.answer"
+                                :value="answerIndex"
+                              />
+                            </v-radio-group>
+                          </div>
+
+                          <div v-else-if="question.type === 'multiple_choice'" class="d-flex flex-column ga-2">
+                            <v-checkbox
+                              v-for="(answer, answerIndex) in question.answers || []"
+                              :key="`${answer.answer}-${answerIndex}`"
+                              :label="answer.answer"
+                              :model-value="getSelectedAnswers(quizIndex).includes(answerIndex)"
+                              color="primary"
+                              hide-details
+                              @update:model-value="toggleMultipleAnswer(quizIndex, answerIndex, $event)"
+                            />
+                          </div>
+
+                          <div v-else>
+                            <v-textarea
+                              :model-value="getOpenTextAnswer(quizIndex)"
+                              label="Tu respuesta"
+                              variant="outlined"
+                              rows="4"
+                              hide-details
+                              @update:model-value="setOpenTextAnswer(quizIndex, String($event || ''))"
+                            />
+                          </div>
+
+                          <v-alert
+                            v-if="question.explanation"
+                            type="info"
+                            variant="tonal"
+                            class="mt-4"
+                          >
+                            {{ question.explanation }}
+                          </v-alert>
+                        </v-card-text>
+                      </v-card>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
+
+              <div class="d-flex d-md-none align-center justify-space-between ga-3 mt-4">
+                <v-btn
+                  prepend-icon="mdi-chevron-left"
+                  variant="tonal"
+                  :disabled="!canGoPrev"
+                  @click="goToPrevSlide"
+                >
+                  Anterior
+                </v-btn>
+
+                <v-btn
+                  append-icon="mdi-chevron-right"
+                  variant="tonal"
+                  :disabled="!canGoNext"
+                  @click="goToNextSlide"
+                >
+                  Siguiente
+                </v-btn>
+              </div>
+            </v-card-text>
+          </template>
+
+          <v-alert
+            v-else
+            type="warning"
+            variant="tonal"
+            class="ma-4 ma-md-6"
+          >
+            Este entrenamiento no tiene slides habilitados.
+          </v-alert>
+        </v-card>
+      </template>
+    </v-container>
+  </v-container>
+</template>
+
+<style scoped>
+.slide-chip-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.slide-chip-active {
+  background: rgba(var(--v-theme-primary), 0.12);
+}
+
+.slide-body {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+.slide-body-markdown {
+  white-space: pre-wrap;
+}
+
+.slide-body-html :deep(h1),
+.slide-body-html :deep(h2),
+.slide-body-html :deep(h3) {
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.slide-body-html :deep(p),
+.slide-body-html :deep(ul),
+.slide-body-html :deep(ol) {
+  margin-bottom: 1rem;
+}
+</style>

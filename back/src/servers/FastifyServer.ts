@@ -53,6 +53,7 @@ class FastifyServer {
 
     setupFastifyServer(): void {
         this.fastifyServer = Fastify({
+            requestTimeout: 360_000,
             logger: this.logger(),
             serializerOpts: {
                 ajv: {

@@ -10,6 +10,27 @@ const menu: MenuItem[] = [
   },
   {
     icon: 'mdi-account-circle',
+    text: 'Academy',
+    gallery: true,
+    children: [
+      {
+        icon: 'mdi-school',
+        text:'training.menu',
+        link: { name: "TrainingCrudPage" },
+        gallery: true,
+        permission: 'training:manage'
+      },
+      {
+        icon: 'mdi-bookshelf',
+        text:'resourcecatalog.menu',
+        link: { name: "ResourceCatalogCrudPage" },
+        gallery: true,
+        permission: 'resourcecatalog:manage'
+      },
+    ]
+  },
+  {
+    icon: 'mdi-account-circle',
     text:'admin',
     gallery: true,
     permission: 'user:manage',
@@ -98,7 +119,7 @@ const menu: MenuItem[] = [
         text:'Password Policy',
         link: { name: "PasswordPolicy" },
         gallery: true,
-      },
+      }
     ]
   },
   {
@@ -130,5 +151,3 @@ export default menu
 export {
   menu
 }
-
-
