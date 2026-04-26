@@ -7,10 +7,21 @@ interface ITrainingBase {
     category?: string
     tags?: Array<string>
     author?: string
+    globalSlideCss?: string
+    files?: Array<{
+        label?: string
+        file: {
+            filename: string,
+            filepath: string,
+            size: number,
+            mimetype?: string,
+            url: string
+        }
+    }>
     slides?: Array<{
-    title: string
-    subtitle?: string
-    content: string
+        title: string
+        subtitle?: string
+        content: string
     contentType: string
     files?: Array<{
                 filename: string,
@@ -19,7 +30,6 @@ interface ITrainingBase {
                 mimetype?: string,
                 url: string
                 }>
-    order: number
     speakerNotes?: string
     quiz?: Array<{
     question: string
@@ -54,10 +64,21 @@ interface ITraining {
     category?: string
     tags?: Array<string>
     author?: string
+    globalSlideCss?: string
+    files?: Array<{
+        label?: string
+        file: {
+            filename: string,
+            filepath: string,
+            size: number,
+            mimetype?: string,
+            url: string
+        }
+    }>
     slides?: Array<{
-    title: string
-    subtitle?: string
-    content: string
+        title: string
+        subtitle?: string
+        content: string
     contentType: string
     files?: Array<{
                 filename: string,
@@ -66,7 +87,6 @@ interface ITraining {
                 mimetype?: string,
                 url: string
                 }>
-    order: number
     speakerNotes?: string
     quiz?: Array<{
     question: string

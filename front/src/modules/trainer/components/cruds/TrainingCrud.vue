@@ -8,6 +8,10 @@ import type {ITraining} from "../../interfaces/ITraining";
 function getTrainingHref(item: unknown) {
   return `/training/${(item as ITraining)._id}`
 }
+
+function getTrainingImproveHref(item: unknown) {
+  return `/training/${(item as ITraining)._id}/improve`
+}
 </script>
 
 <template>
@@ -17,6 +21,7 @@ function getTrainingHref(item: unknown) {
 
     <template v-slot:item.actions="{item}">
       <v-btn variant="text" :href="getTrainingHref(item)" target="_blank" icon="mdi-view-gallery"></v-btn>
+      <v-btn variant="text" :href="getTrainingImproveHref(item)" target="_blank" icon="mdi-robot"></v-btn>
     </template>
 
   </crud>

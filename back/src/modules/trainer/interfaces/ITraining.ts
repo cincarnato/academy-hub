@@ -1,4 +1,3 @@
-
 interface ITrainingBase {
     name: string
     slug?: string
@@ -7,34 +6,37 @@ interface ITrainingBase {
     category?: string
     tags?: Array<string>
     author?: string
-    slides?: Array<{
-    title: string
-    subtitle?: string
-    content: string
-    contentType: string
+    globalSlideCss?: string
     files?: Array<{
-                filename: string,
-                filepath: string,
-                size: number,
-                mimetype?: string,
-                url: string
-                }>
-    order: number
-    speakerNotes?: string
-    quiz?: Array<{
-    question: string
-    description?: string
-    type: string
-    answers?: Array<{
-    answer: string
-    points?: number
-    isCorrect?: boolean
-    feedback?: string
+        label?: string
+        file: {
+            filename: string,
+            filepath: string,
+            size: number,
+            mimetype?: string,
+            url: string
+        }
     }>
-    required?: boolean
-    explanation?: string
-    }>
-    enabled?: boolean
+    slides?: Array<{
+        title: string
+        subtitle?: string
+        content: string
+        contentType: string
+        speakerNotes?: string
+        quiz?: Array<{
+            question: string
+            description?: string
+            type: string
+            answers?: Array<{
+                answer: string
+                points?: number
+                isCorrect?: boolean
+                feedback?: string
+            }>
+            required?: boolean
+            explanation?: string
+        }>
+        enabled?: boolean
     }>
     primaryColor?: string
     coverImageUrl?: string
@@ -54,34 +56,37 @@ interface ITraining {
     category?: string
     tags?: Array<string>
     author?: string
-    slides?: Array<{
-    title: string
-    subtitle?: string
-    content: string
-    contentType: string
+    globalSlideCss?: string
     files?: Array<{
-                filename: string,
-                filepath: string,
-                size: number,
-                mimetype?: string,
-                url: string
-                }>
-    order: number
-    speakerNotes?: string
-    quiz?: Array<{
-    question: string
-    description?: string
-    type: string
-    answers?: Array<{
-    answer: string
-    points?: number
-    isCorrect?: boolean
-    feedback?: string
+        label?: string
+        file: {
+            filename: string,
+            filepath: string,
+            size: number,
+            mimetype?: string,
+            url: string
+        }
     }>
-    required?: boolean
-    explanation?: string
-    }>
-    enabled?: boolean
+    slides?: Array<{
+        title: string
+        subtitle?: string
+        content: string
+        contentType: string
+        speakerNotes?: string
+        quiz?: Array<{
+            question: string
+            description?: string
+            type: string
+            answers?: Array<{
+                answer: string
+                points?: number
+                isCorrect?: boolean
+                feedback?: string
+            }>
+            required?: boolean
+            explanation?: string
+        }>
+        enabled?: boolean
     }>
     primaryColor?: string
     coverImageUrl?: string
@@ -93,6 +98,6 @@ interface ITraining {
 }
 
 export type {
-ITrainingBase, 
-ITraining
+    ITrainingBase,
+    ITraining
 }

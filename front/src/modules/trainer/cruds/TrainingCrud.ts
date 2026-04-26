@@ -103,18 +103,32 @@ class TrainingCrud extends EntityCrud implements IEntityCrud {
       {name: 'category', type: 'string', label: 'category', default: '', groupTab: 'General'},
       {name: 'tags', type: 'array.string', label: 'tags', default: [], groupTab: 'General'},
       {name: 'author', type: 'string', label: 'author', default: '', groupTab: 'General'},
+      {name: 'globalSlideCss', type: 'longString', label: 'globalSlideCss', default: '', groupTab: 'General'},
+      {
+        name: 'files',
+        type: 'array.object',
+        label: 'Files',
+        default: [],
+        groupTab: 'Archivos',
+        arrayObjectUI: 'chips',
+        arrayObjectShowField: 'label',
+        objectFields: [
+          {name: 'label', type: 'string', label: 'label', default: ''},
+          {name: 'file', type: 'fullFile', label: 'file', default: {}, prependInnerIcon: 'mdi mdi-attachment'}
+        ]
+      },
       {
         name: 'slides',
         type: 'array.object',
         label: 'slides',
         default: [],
-        groupTab: 'Content',
-        objectFields: [{name: 'title', type: 'string', label: 'title', default: ''},
+        arrayObjectUI: 'accordion',
+        groupTab: 'Contenido',
+        objectFields: [
+          {name: 'title', type: 'string', label: 'title', default: ''},
           {name: 'subtitle', type: 'string', label: 'subtitle', default: ''},
-          {name: 'content', type: 'longString', label: 'content', default: ''},
           {name: 'contentType', type: 'enum', label: 'contentType', default: 'markdown', enum: ['html', 'markdown']},
-          {name: 'files', type: 'array.fullFile', label: 'files', default: null},
-          {name: 'order', type: 'number', label: 'order', default: null},
+          {name: 'content', type: 'longString', label: 'content', default: ''},
           {name: 'speakerNotes', type: 'longString', label: 'speakerNotes', default: ''},
           {
             name: 'quiz',
@@ -145,11 +159,11 @@ class TrainingCrud extends EntityCrud implements IEntityCrud {
           },
           {name: 'enabled', type: 'boolean', label: 'enabled', default: true}]
       },
-      {name: 'primaryColor', type: 'string', label: 'primaryColor', default: '', groupTab: 'Publication'},
-      {name: 'coverImageUrl', type: 'string', label: 'coverImageUrl', default: '', groupTab: 'Publication'},
-      {name: 'isPublic', type: 'boolean', label: 'isPublic', default: false, groupTab: 'Publication'},
-      {name: 'publishedAt', type: 'date', label: 'publishedAt', default: null, groupTab: 'Publication'},
-      {name: 'metadata', type: 'record', label: 'metadata', default: {}, groupTab: 'Advanced', objectFields: []}
+      {name: 'primaryColor', type: 'string', label: 'primaryColor', default: '', groupTab: 'Publicación'},
+      {name: 'coverImageUrl', type: 'string', label: 'coverImageUrl', default: '', groupTab: 'Publicación'},
+      {name: 'isPublic', type: 'boolean', label: 'isPublic', default: false, groupTab: 'Publicación'},
+      {name: 'publishedAt', type: 'date', label: 'publishedAt', default: null, groupTab: 'Publicación'},
+      {name: 'metadata', type: 'record', label: 'metadata', default: {}, groupTab: 'Avanzado', objectFields: []}
     ]
   }
 
@@ -204,12 +218,12 @@ class TrainingCrud extends EntityCrud implements IEntityCrud {
   }
 
   get dialogFullscreen() {
-    return false
+    return true
   }
 
   get tabs() {
     return [
-      'General', 'Content', 'Publication', 'Advanced'
+      'General', 'Archivos', 'Contenido', 'Publicación', 'Avanzado'
     ]
   }
 

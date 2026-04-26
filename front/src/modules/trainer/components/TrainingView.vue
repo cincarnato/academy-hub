@@ -17,14 +17,14 @@ const error = ref("")
 const training = ref<ITraining | null>(null)
 const activeSlideIndex = ref(0)
 const showQuiz = ref(false)
+const isPresentationOpen = ref(false)
 const openTextAnswers = ref<Record<string, string>>({})
 const selectedAnswers = ref<Record<string, Array<number>>>({})
 
 const slides = computed(() => {
-  return [...(training.value?.slides || [])]
-    .filter((slide) => slide.enabled !== false)
-    .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+  return (training.value?.slides || []).filter((slide) => slide.enabled !== false)
 })
+const globalSlideCss = computed(() => String(training.value?.globalSlideCss || "").trim())
 
 const activeSlide = computed(() => slides.value[activeSlideIndex.value] || null)
 const activeQuiz = computed(() => activeSlide.value?.quiz || [])
@@ -70,8 +70,25 @@ function goToNextSlide() {
   goToSlide(activeSlideIndex.value + 1)
 }
 
+function openPresentationMode() {
+  if (!activeSlide.value) return
+  isPresentationOpen.value = true
+}
+
+function closePresentationMode() {
+  isPresentationOpen.value = false
+}
+
 function renderSlideContent(slide: TrainingSlide) {
   return slide.content || ""
+}
+
+function shouldRenderAsHtml(slide: TrainingSlide) {
+  const normalizedContentType = String(slide.contentType || "").trim().toLowerCase()
+  if (normalizedContentType === "html") return true
+
+  const content = renderSlideContent(slide).trim()
+  return /<\/?[a-z][\w-]*(\s[^>]*)?>/i.test(content)
 }
 
 function hasQuiz(slide: TrainingSlide | null) {
@@ -149,6 +166,14 @@ onMounted(() => {
       </v-alert>
 
       <template v-else-if="training">
+        <component
+          :is="'style'"
+          v-if="globalSlideCss"
+          type="text/css"
+        >
+          {{ globalSlideCss }}
+        </component>
+
         <v-card class="mx-auto" max-width="1400" rounded="xl">
           <v-card-item class="pa-4 pa-md-6">
             <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
@@ -188,14 +213,16 @@ onMounted(() => {
             >
               <v-slide-group-item
                 v-for="(slide, index) in slides"
-                :key="`${slide.order}-${slide.title}-${index}`"
+                :key="`${slide.title}-${index}`"
                 v-slot="{ toggle }"
                 :value="index"
               >
                 <v-btn
-                  variant="text"
+                  :variant="activeSlideIndex === index ? 'flat' : 'text'"
+                  :color="activeSlideIndex === index ? 'primary' : undefined"
                   rounded="pill"
-                  class="mr-2 text-none"
+                  class="mr-2 text-none slide-chip-btn"
+                  :class="{'slide-chip-btn--active': activeSlideIndex === index}"
                   @click="toggle(); goToSlide(index)"
                 >
                   <span class="slide-chip-index mr-2">{{ index + 1 }}</span>
@@ -209,20 +236,31 @@ onMounted(() => {
 
           <template v-if="activeSlide">
             <v-card-text class="pa-3 pa-md-6">
-              <div class="d-none d-md-flex align-center justify-space-between mb-4">
+              <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3 mb-4">
                 <v-btn
-                  icon="mdi-chevron-left"
-                  variant="tonal"
-                  :disabled="!canGoPrev"
-                  @click="goToPrevSlide"
-                />
+                  prepend-icon="mdi-presentation"
+                  color="primary"
+                  variant="flat"
+                  @click="openPresentationMode"
+                >
+                  Modo presentación
+                </v-btn>
 
-                <v-btn
-                  icon="mdi-chevron-right"
-                  variant="tonal"
-                  :disabled="!canGoNext"
-                  @click="goToNextSlide"
-                />
+                <div class="d-none d-md-flex align-center ga-3">
+                  <v-btn
+                    icon="mdi-chevron-left"
+                    variant="tonal"
+                    :disabled="!canGoPrev"
+                    @click="goToPrevSlide"
+                  />
+
+                  <v-btn
+                    icon="mdi-chevron-right"
+                    variant="tonal"
+                    :disabled="!canGoNext"
+                    @click="goToNextSlide"
+                  />
+                </div>
               </div>
 
               <v-card variant="outlined" rounded="xl">
@@ -238,7 +276,7 @@ onMounted(() => {
                   </div>
 
                   <div
-                    v-if="activeSlide.contentType === 'html'"
+                    v-if="shouldRenderAsHtml(activeSlide)"
                     class="slide-body slide-body-html"
                     v-html="renderSlideContent(activeSlide)"
                   />
@@ -410,12 +448,88 @@ onMounted(() => {
             Este entrenamiento no tiene slides habilitados.
           </v-alert>
         </v-card>
+
+        <v-dialog
+          v-model="isPresentationOpen"
+          fullscreen
+          scrim="black"
+          transition="dialog-bottom-transition"
+        >
+          <v-card v-if="activeSlide" class="presentation-dialog">
+            <v-toolbar color="surface" density="comfortable" class="px-2 px-md-4">
+              <div class="d-flex flex-column justify-center min-w-0 presentation-toolbar-side">
+                <div class="text-subtitle-1 font-weight-bold text-truncate">
+                  {{ training.name }}
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
+                  Slide {{ activeSlideIndex + 1 }} de {{ totalSlides }}
+                  <span v-if="activeSlide.title" class="text-truncate d-inline-block presentation-toolbar-slide">
+                    · {{ activeSlide.title }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="d-flex align-center justify-center ga-2 flex-1-1 presentation-toolbar-center">
+                <v-btn
+                  icon="mdi-chevron-left"
+                  variant="tonal"
+                  :disabled="!canGoPrev"
+                  @click="goToPrevSlide"
+                />
+                <v-btn
+                  icon="mdi-chevron-right"
+                  variant="tonal"
+                  :disabled="!canGoNext"
+                  @click="goToNextSlide"
+                />
+              </div>
+
+              <div class="d-flex justify-end presentation-toolbar-side">
+                <v-btn
+                  icon="mdi-close"
+                  variant="text"
+                  @click="closePresentationMode"
+                />
+              </div>
+            </v-toolbar>
+
+            <v-card-text class="presentation-content pa-0">
+              <div class="presentation-slide">
+                <div
+                  v-if="shouldRenderAsHtml(activeSlide)"
+                  class="slide-body slide-body-html presentation-slide-body"
+                  v-html="renderSlideContent(activeSlide)"
+                />
+
+                <div
+                  v-else
+                  class="slide-body slide-body-markdown presentation-slide-body"
+                >
+                  {{ renderSlideContent(activeSlide) }}
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
       </template>
     </v-container>
   </v-container>
 </template>
 
 <style scoped>
+.slide-chip-btn {
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.slide-chip-btn--active {
+  background: rgba(var(--v-theme-primary), 0.16);
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  color: rgb(var(--v-theme-primary));
+  box-shadow: 0 10px 24px rgba(var(--v-theme-primary), 0.18);
+  transform: translateY(-1px);
+}
+
 .slide-chip-index {
   display: inline-flex;
   align-items: center;
@@ -428,8 +542,69 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+.slide-chip-btn--active .slide-chip-index {
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+
 .slide-chip-active {
   background: rgba(var(--v-theme-primary), 0.12);
+}
+
+.presentation-dialog {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.presentation-toolbar-side {
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.presentation-toolbar-center {
+  min-width: 0;
+}
+
+.presentation-toolbar-slide {
+  max-width: min(36vw, 320px);
+  vertical-align: bottom;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+  padding: 0;
+  background:
+    radial-gradient(circle at top, rgba(var(--v-theme-primary), 0.08), transparent 36%),
+    rgb(var(--v-theme-surface));
+}
+
+.presentation-slide {
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 0;
+}
+
+@media (min-width: 960px) {
+  .presentation-content {
+    padding: 0 8px 8px;
+  }
+
+  .presentation-slide {
+    padding: 0 8px 8px;
+  }
+}
+
+.presentation-slide-body {
+  font-size: clamp(1.05rem, 1vw + 0.9rem, 1.5rem);
+  line-height: 1.8;
 }
 
 .slide-body {

@@ -1,4 +1,5 @@
 import ResourceCatalogPage from "../pages/ResourceCatalogPage.vue";
+import TrainingImprovePage from "../pages/TrainingImprovePage.vue";
 import TrainingPage from "../pages/TrainingPage.vue";
 
 const TrainerRoutes = [
@@ -15,6 +16,15 @@ const TrainerRoutes = [
     name: 'TrainingPage',
     path: '/training/:trainingId',
     component: TrainingPage,
+    props: true,
+    meta: {
+      auth: false,
+    }
+  },
+  {
+    name: 'TrainingImprovePage',
+    path: '/training/:trainingId/improve',
+    component: TrainingImprovePage,
     props: true,
     meta: {
       auth: false,

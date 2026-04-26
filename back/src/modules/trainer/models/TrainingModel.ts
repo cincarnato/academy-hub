@@ -12,19 +12,23 @@ const TrainingSchema = new mongoose.Schema<ITraining>({
     category: {type: String, required: false, index: true, unique: false},
     tags: [{type: String, required: false, index: false, unique: false}],
     author: {type: String, required: false, index: true, unique: false},
+    globalSlideCss: {type: String, required: false, index: false, unique: false},
+    files: [{
+        label: {type: String, required: false, index: false, unique: false},
+        file: {
+            filename: {type: String, required: true, index: false, unique: false},
+            filepath: {type: String, required: true, index: false, unique: false},
+            size: {type: Number, required: true, index: false, unique: false},
+            mimetype: {type: String, required: true, index: false, unique: false},
+            url: {type: String, required: true, index: false, unique: false},
+        }
+    }],
     slides: [{
         title: {type: String, required: true, index: false, unique: false},
         subtitle: {type: String, required: false, index: false, unique: false},
         content: {type: String, required: true, index: false, unique: false},
         contentType: {type: String, enum: ['html', 'markdown'], required: true, index: false, unique: false},
-        files: [{
-            filename: {type: String, required: false, index: false, unique: false},
-            filepath: {type: String, required: false, index: false, unique: false},
-            size: {type: Number, required: false, index: false, unique: false},
-            mimetype: {type: String, required: false, index: false, unique: false},
-            url: {type: String, required: false, index: false, unique: false},
-        }],
-        order: {type: Number, required: true, index: false, unique: false},
+
         speakerNotes: {type: String, required: false, index: false, unique: false},
         quiz: [{
             question: {type: String, required: true, index: false, unique: false},

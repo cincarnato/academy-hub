@@ -15,6 +15,7 @@ const provider = ResourceCatalogProvider.instance
 const loading = ref(false)
 const error = ref("")
 const catalog = ref<IResourceCatalog | null>(null)
+const resourcesPerRow = ref<1 | 2 | 3>(3)
 
 const activeResources = computed(() => {
   return (catalog.value?.resources || []).filter((resource) => resource.enabled !== false)
@@ -23,19 +24,7 @@ const activeResources = computed(() => {
 const featuredResources = computed(() => activeResources.value.slice(0, 3))
 
 const catalogTags = computed(() => catalog.value?.tags || [])
-
-const groupedResources = computed(() => {
-  const groups = new Map<string, CatalogResource[]>()
-
-  for (const resource of activeResources.value) {
-    const key = resource.category?.trim() || "Recursos destacados"
-    const current = groups.get(key) || []
-    current.push(resource)
-    groups.set(key, current)
-  }
-
-  return Array.from(groups.entries()).map(([name, resources]) => ({name, resources}))
-})
+const resourceColumnSpan = computed(() => 12 / resourcesPerRow.value)
 
 const stats = computed(() => {
   const resources = activeResources.value
@@ -240,94 +229,103 @@ watch(() => props.catalogId, () => {
       v-if="catalog && !loading && !error"
       class="py-8 py-md-10"
     >
-      <div
-        v-for="group in groupedResources"
-        :key="group.name"
-        class="mb-10"
-      >
-        <div class="d-flex flex-column flex-md-row align-md-end justify-space-between mb-5 ga-2">
-          <div>
-            <h2 class="text-h5 font-weight-bold mb-1">{{ group.name }}</h2>
-            <p class="text-body-2 text-medium-emphasis">
-              {{ group.resources.length }} recurso<span v-if="group.resources.length !== 1">s</span> seleccionados
-            </p>
-          </div>
+      <div class="d-flex flex-column flex-md-row align-md-end justify-space-between mb-5 ga-3">
+        <div>
+          <h2 class="text-h5 font-weight-bold mb-1">Todos los recursos</h2>
+          <p class="text-body-2 text-medium-emphasis">
+            {{ activeResources.length }} recurso<span v-if="activeResources.length !== 1">s</span> disponibles
+          </p>
         </div>
 
-        <v-row>
-          <v-col
-            v-for="resource in group.resources"
-            :key="`${group.name}-${resource.name}-${resource.url}`"
-            cols="12"
-            sm="6"
-            xl="4"
-          >
-            <v-card class="resource-card h-100" elevation="0">
-              <v-card-text class="pa-6 d-flex flex-column h-100">
-                <div class="d-flex align-start ga-4 mb-4">
-                  <v-avatar rounded="xl" size="56" class="resource-avatar">
-                    <v-img
-                      v-if="resource.logoUrl || resource.imageUrl"
-                      :src="resource.logoUrl || resource.imageUrl"
-                      cover
-                    />
-                    <span v-else class="text-h6 font-weight-bold">
-                      {{ resource.name.slice(0, 1).toUpperCase() }}
-                    </span>
-                  </v-avatar>
+        <div class="resource-layout-controls d-none d-md-flex align-center ga-2">
+          <span class="text-body-2 text-medium-emphasis">Vista</span>
 
-                  <div class="flex-grow-1">
-                    <div class="text-h6 font-weight-bold mb-1">{{ resource.name }}</div>
-                    <div class="text-body-2 text-medium-emphasis">
-                      {{ resource.company || resource.creator || "Recurso recomendado" }}
-                    </div>
+          <v-btn-toggle
+            v-model="resourcesPerRow"
+            color="primary"
+            mandatory
+            divided
+            variant="outlined"
+          >
+            <v-btn :value="1">1 por fila</v-btn>
+            <v-btn :value="2">2 por fila</v-btn>
+            <v-btn :value="3">3 por fila</v-btn>
+          </v-btn-toggle>
+        </div>
+      </div>
+
+      <v-row>
+        <v-col
+          v-for="resource in activeResources"
+          :key="`${resource.name}-${resource.url}`"
+          cols="12"
+          :md="resourceColumnSpan"
+        >
+          <v-card class="resource-card h-100" elevation="0">
+            <v-card-text class="pa-6 d-flex flex-column h-100">
+              <div class="d-flex align-start ga-4 mb-4">
+                <v-avatar rounded="xl" size="56" class="resource-avatar">
+                  <v-img
+                    v-if="resource.logoUrl || resource.imageUrl"
+                    :src="resource.logoUrl || resource.imageUrl"
+                    cover
+                  />
+                  <span v-else class="text-h6 font-weight-bold">
+                    {{ resource.name.slice(0, 1).toUpperCase() }}
+                  </span>
+                </v-avatar>
+
+                <div class="flex-grow-1">
+                  <div class="text-h6 font-weight-bold mb-1">{{ resource.name }}</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ resource.company || resource.creator || "Recurso recomendado" }}
                   </div>
                 </div>
+              </div>
 
-                <p class="text-body-2 text-medium-emphasis mb-4 flex-grow-1">
-                  {{ resource.description || "Acceso directo al recurso para incorporarlo a tu stack de trabajo." }}
-                </p>
+              <p class="text-body-2 text-medium-emphasis mb-4 flex-grow-1">
+                {{ resource.description || "Acceso directo al recurso para incorporarlo a tu stack de trabajo." }}
+              </p>
 
-                <div class="d-flex flex-wrap ga-2 mb-4">
-                  <v-chip
-                    v-if="resource.category"
-                    size="small"
-                    color="primary"
-                    variant="tonal"
-                  >
-                    {{ resource.category }}
-                  </v-chip>
+              <div class="d-flex flex-wrap ga-2 mb-4">
+                <v-chip
+                  v-if="resource.category"
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                >
+                  {{ resource.category }}
+                </v-chip>
 
-                  <v-chip
-                    v-for="tag in getResourceTags(resource)"
-                    :key="tag"
-                    size="small"
-                    variant="outlined"
-                  >
-                    {{ tag }}
-                  </v-chip>
-                </div>
+                <v-chip
+                  v-for="tag in getResourceTags(resource)"
+                  :key="tag"
+                  size="small"
+                  variant="outlined"
+                >
+                  {{ tag }}
+                </v-chip>
+              </div>
 
-                <div class="d-flex align-center justify-space-between ga-3 mt-auto">
-                  <span class="text-body-2 text-medium-emphasis">
-                    {{ getDomainLabel(resource.url) }}
-                  </span>
+              <div class="d-flex align-center justify-space-between ga-3 mt-auto">
+                <span class="text-body-2 text-medium-emphasis">
+                  {{ getDomainLabel(resource.url) }}
+                </span>
 
-                  <v-btn
-                    :href="resource.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="primary"
-                    variant="flat"
-                  >
-                    Abrir recurso
-                  </v-btn>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </div>
+                <v-btn
+                  :href="resource.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="primary"
+                  variant="flat"
+                >
+                  Abrir recurso
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-container>
   </v-container>
 </template>
@@ -425,5 +423,9 @@ watch(() => props.catalogId, () => {
   transform: translateY(-4px);
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
   border-color: rgba(var(--v-theme-primary), 0.24);
+}
+
+.resource-layout-controls {
+  flex-wrap: wrap;
 }
 </style>
