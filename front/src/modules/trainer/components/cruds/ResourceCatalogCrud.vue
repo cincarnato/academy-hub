@@ -3,7 +3,11 @@
 import ResourceCatalogCrud from '../../cruds/ResourceCatalogCrud'
 import {Crud} from "@drax/crud-vue";
 import {formatDate} from "@drax/common-front"
+import type {IResourceCatalog} from "../../interfaces/IResourceCatalog";
 
+function getResourceCatalogHref(item: unknown) {
+  return `/resource-catalog/${(item as IResourceCatalog)._id}`
+}
 </script>
 
 <template>
@@ -12,7 +16,7 @@ import {formatDate} from "@drax/common-front"
     <template v-slot:item.publishedAt="{value}">{{formatDate(value)}}</template>
 
   <template v-slot:item.actions="{item}">
-    <v-btn variant="text" :href="'/resource-catalog/'+item._id" target="_blank" icon="mdi-view-gallery"></v-btn>
+    <v-btn variant="text" :href="getResourceCatalogHref(item)" target="_blank" icon="mdi-view-gallery"></v-btn>
   </template>
   </crud>
 </template>
@@ -20,4 +24,3 @@ import {formatDate} from "@drax/common-front"
 <style scoped>
 
 </style>
-

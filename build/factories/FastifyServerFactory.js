@@ -4,10 +4,14 @@ import { MediaRoutes, FileRoutes } from "@drax/media-back";
 import { SettingRoutes } from "@drax/settings-back";
 import { DashboardRoutes } from "@drax/dashboard-back";
 import { AuditRoutes } from "@drax/audit-back";
+import { AIRoutes, AILogRoutes } from "@drax/ai-back";
+import { CrudSavedQueryFastifyRoutes } from "@drax/crud-back";
 //Local modules routes
 import { GoogleFastifyRoutes } from "../modules/google/routes/GoogleRoutes.js";
 import { HealthRoutes } from "../modules/base/routes/HealthRoutes.js";
 import { NotificationFastifyRoutes } from "../modules/base/routes/NotificationRoutes.js";
+import { ResourceCatalogFastifyRoutes } from "../modules/trainer/routes/ResourceCatalogRoutes.js";
+import { TrainingFastifyRoutes } from "../modules/trainer/routes/TrainingRoutes.js";
 function FastifyServerFactory(rootDir) {
     const server = new FastifyServer(rootDir);
     server.fastifyDecorateRequest('authUser', null);
@@ -28,10 +32,15 @@ function FastifyServerFactory(rootDir) {
     server.fastifyRegister(FileRoutes);
     server.fastifyRegister(SettingRoutes);
     server.fastifyRegister(DashboardRoutes);
+    server.fastifyRegister(AIRoutes);
+    server.fastifyRegister(AILogRoutes);
+    server.fastifyRegister(CrudSavedQueryFastifyRoutes);
     //LOCAL MODULES ROUTES
     server.fastifyRegister(GoogleFastifyRoutes);
     server.fastifyRegister(HealthRoutes);
     server.fastifyRegister(NotificationFastifyRoutes);
+    server.fastifyRegister(ResourceCatalogFastifyRoutes);
+    server.fastifyRegister(TrainingFastifyRoutes);
     return server;
 }
 export default FastifyServerFactory;

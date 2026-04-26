@@ -3,7 +3,11 @@
 import TrainingCrud from '../../cruds/TrainingCrud'
 import {Crud} from "@drax/crud-vue";
 import {formatDate} from "@drax/common-front"
+import type {ITraining} from "../../interfaces/ITraining";
 
+function getTrainingHref(item: unknown) {
+  return `/training/${(item as ITraining)._id}`
+}
 </script>
 
 <template>
@@ -12,7 +16,7 @@ import {formatDate} from "@drax/common-front"
     <template v-slot:item.publishedAt="{value}">{{formatDate(value)}}</template>
 
     <template v-slot:item.actions="{item}">
-      <v-btn variant="text" :href="'/training/'+item._id" target="_blank" icon="mdi-view-gallery"></v-btn>
+      <v-btn variant="text" :href="getTrainingHref(item)" target="_blank" icon="mdi-view-gallery"></v-btn>
     </template>
 
   </crud>
@@ -21,4 +25,3 @@ import {formatDate} from "@drax/common-front"
 <style scoped>
 
 </style>
-

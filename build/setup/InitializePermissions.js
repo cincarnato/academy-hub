@@ -4,8 +4,12 @@ import { MediaPermissions, FilePermissions } from "@drax/media-back";
 import { SettingPermissions } from "@drax/settings-back";
 import { DashboardPermissions } from "@drax/dashboard-back";
 import { AuditPermissions } from "@drax/audit-back";
+import { AILogPermissions, AIPermissions } from "@drax/ai-back";
+import { CrudSavedQueryPermissions } from "@drax/crud-back";
 import { BasePermissions } from "../modules/base/permissions/BasePermissions.js";
 import { NotificationPermissions } from "../modules/base/permissions/NotificationPermissions.js";
+import { ResourceCatalogPermissions } from "../modules/trainer/permissions/ResourceCatalogPermissions.js";
+import { TrainingPermissions } from "../modules/trainer/permissions/TrainingPermissions.js";
 function InitializePermissions() {
     //Merge All Permissions
     const permissions = [
@@ -20,9 +24,14 @@ function InitializePermissions() {
         ...Object.values(SettingPermissions),
         ...Object.values(DashboardPermissions),
         ...Object.values(AuditPermissions),
+        ...Object.values(AILogPermissions),
+        ...Object.values(AIPermissions),
+        ...Object.values(CrudSavedQueryPermissions),
         //Local modules permissions
         ...Object.values(BasePermissions),
         ...Object.values(NotificationPermissions),
+        ...Object.values(ResourceCatalogPermissions),
+        ...Object.values(TrainingPermissions),
     ];
     //Load All Permissions
     LoadPermissions(permissions);

@@ -21,6 +21,7 @@ class FastifyServer {
     }
     setupFastifyServer() {
         this.fastifyServer = Fastify({
+            requestTimeout: 360000,
             logger: this.logger(),
             serializerOpts: {
                 ajv: {
