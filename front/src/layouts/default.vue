@@ -50,6 +50,12 @@ const appName = computed(() => {
       <identity-profile-avatar class="cursor-pointer" @click="profileDrawer = !profileDrawer"></identity-profile-avatar>
     </v-app-bar>
 
+    <v-app-bar v-else density="compact" >
+      <v-app-bar-title> {{appName}}</v-app-bar-title>
+      <v-spacer></v-spacer>
+      <dark-mode></dark-mode>
+    </v-app-bar>
+
     <identity-profile-drawer v-if="isAuthenticated()" v-model="profileDrawer" ></identity-profile-drawer>
 
     <animated-background></animated-background>

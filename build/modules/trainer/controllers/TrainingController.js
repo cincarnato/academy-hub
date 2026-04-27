@@ -13,6 +13,9 @@ class TrainingController extends AbstractFastifyController {
         this.userSetter = false;
         this.userAssert = false;
     }
+    assertReadPermission(request) {
+        request.rbac.assertPermission(this.permission.View);
+    }
 }
 export default TrainingController;
 export { TrainingController };

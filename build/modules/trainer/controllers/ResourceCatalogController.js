@@ -13,6 +13,9 @@ class ResourceCatalogController extends AbstractFastifyController {
         this.userSetter = false;
         this.userAssert = false;
     }
+    assertReadPermission(request) {
+        return true;
+    }
 }
 export default ResourceCatalogController;
 export { ResourceCatalogController };

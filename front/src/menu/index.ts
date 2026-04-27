@@ -20,12 +20,20 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'training:manage'
       },
+
       {
         icon: 'mdi-bookshelf',
         text:'resourcecatalog.menu',
         link: { name: "ResourceCatalogCrudPage" },
         gallery: true,
         permission: 'resourcecatalog:manage'
+      },
+      {
+        icon: 'mdi-view-grid-outline',
+        text:'Galería Catálogos',
+        link: { name: "ResourceCatalogGalleryPage" },
+        gallery: true,
+        auth: false
       },
       {
         icon: 'mdi-file-upload',
