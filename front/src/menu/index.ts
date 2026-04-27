@@ -27,6 +27,13 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'resourcecatalog:manage'
       },
+      {
+        icon: 'mdi-file-upload',
+        text:'fileasset.menu',
+        link: { name: "FileAssetCrudPage" },
+        gallery: true,
+        permission: 'fileasset:manage'
+      },
     ]
   },
   {
