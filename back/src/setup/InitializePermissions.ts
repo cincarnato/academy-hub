@@ -16,6 +16,7 @@ import {CrudSavedQueryPermissions} from "@drax/crud-back";
 
 import {BasePermissions} from "../modules/base/permissions/BasePermissions.js";
 import {NotificationPermissions} from "../modules/base/permissions/NotificationPermissions.js";
+import {ConceptCatalogPermissions} from "../modules/trainer/permissions/ConceptCatalogPermissions.js";
 import {FileAssetPermissions} from "../modules/trainer/permissions/FileAssetPermissions.js";
 import {ResourceCatalogPermissions} from "../modules/trainer/permissions/ResourceCatalogPermissions.js";
 import {TrainingPermissions} from "../modules/trainer/permissions/TrainingPermissions.js";
@@ -43,6 +44,7 @@ function InitializePermissions() {
         //Local modules permissions
         ...Object.values(BasePermissions),
         ...Object.values(NotificationPermissions),
+        ...Object.values(ConceptCatalogPermissions),
         ...Object.values(FileAssetPermissions),
         ...Object.values(ResourceCatalogPermissions),
         ...Object.values(TrainingPermissions),

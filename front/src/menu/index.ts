@@ -20,7 +20,13 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'training:manage'
       },
-
+      {
+        icon: 'mdi-lightbulb-on-outline',
+        text:'conceptcatalog.menu',
+        link: { name: "ConceptCatalogCrudPage" },
+        gallery: true,
+        permission: 'conceptcatalog:manage'
+      },
       {
         icon: 'mdi-bookshelf',
         text:'resourcecatalog.menu',

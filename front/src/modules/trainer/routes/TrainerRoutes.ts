@@ -1,3 +1,4 @@
+import ConceptCatalogPage from "../pages/ConceptCatalogPage.vue";
 import ResourceCatalogPage from "../pages/ResourceCatalogPage.vue";
 import ResourceCatalogGalleryPage from "../pages/ResourceCatalogGalleryPage.vue";
 import TrainingImprovePage from "../pages/TrainingImprovePage.vue";
@@ -16,6 +17,15 @@ const TrainerRoutes = [
     name: 'ResourceCatalogPage',
     path: '/resource-catalog/:catalogId',
     component: ResourceCatalogPage,
+    props: true,
+    meta: {
+      auth: false,
+    }
+  },
+  {
+    name: 'ConceptCatalogPage',
+    path: '/concept-catalog/:catalogId',
+    component: ConceptCatalogPage,
     props: true,
     meta: {
       auth: false,
