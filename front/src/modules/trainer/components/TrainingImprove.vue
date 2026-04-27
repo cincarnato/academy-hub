@@ -58,7 +58,7 @@ async function loadTraining() {
   error.value = ""
 
   try {
-    training.value = await provider.findById(props.trainingId)
+    training.value = await provider.findByIdOrSlug(props.trainingId)
     selectedSlideIndex.value = 0
     themePreview.value = training.value?.globalSlideCss || ""
   } catch (err) {

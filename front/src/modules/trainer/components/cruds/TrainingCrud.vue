@@ -6,11 +6,13 @@ import {formatDate} from "@drax/common-front"
 import type {ITraining} from "../../interfaces/ITraining";
 
 function getTrainingHref(item: unknown) {
-  return `/training/${(item as ITraining)._id}`
+  const training = item as ITraining
+  return `/training/${training.slug || training._id}`
 }
 
 function getTrainingImproveHref(item: unknown) {
-  return `/training/${(item as ITraining)._id}/improve`
+  const training = item as ITraining
+  return `/training/${training.slug || training._id}/improve`
 }
 </script>
 

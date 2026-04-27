@@ -1,10 +1,28 @@
 import ConceptCatalogPage from "../pages/ConceptCatalogPage.vue";
+import ConceptCatalogGalleryPage from "../pages/ConceptCatalogGalleryPage.vue";
 import ResourceCatalogPage from "../pages/ResourceCatalogPage.vue";
 import ResourceCatalogGalleryPage from "../pages/ResourceCatalogGalleryPage.vue";
 import TrainingImprovePage from "../pages/TrainingImprovePage.vue";
+import TrainingGalleryPage from "../pages/TrainingGalleryPage.vue";
 import TrainingPage from "../pages/TrainingPage.vue";
 
 const TrainerRoutes = [
+  {
+    name: 'TrainingGalleryPage',
+    path: '/trainings-gallery',
+    component: TrainingGalleryPage,
+    meta: {
+      auth: false,
+    }
+  },
+  {
+    name: 'ConceptCatalogGalleryPage',
+    path: '/concept-catalogs-gallery',
+    component: ConceptCatalogGalleryPage,
+    meta: {
+      auth: false,
+    }
+  },
   {
     name: 'ResourceCatalogGalleryPage',
     path: '/resource-catalogs-gallery',

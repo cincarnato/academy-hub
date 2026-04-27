@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from "vue";
-import ResourceCatalogProvider from "../providers/ResourceCatalogProvider";
-import type {IResourceCatalog} from "../interfaces/IResourceCatalog";
+import TrainingProvider from "../providers/TrainingProvider";
+import type {ITraining} from "../interfaces/ITraining";
 
-const provider = ResourceCatalogProvider.instance
+const provider = TrainingProvider.instance
 
-const catalogs = ref<IResourceCatalog[]>([])
+const trainings = ref<ITraining[]>([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const error = ref("")
@@ -13,10 +13,10 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalItems = ref(0)
 
-const hasCatalogs = computed(() => catalogs.value.length > 0)
+const hasTrainings = computed(() => trainings.value.length > 0)
 const hasMorePages = computed(() => currentPage.value < totalPages.value)
 
-async function fetchCatalogs(page: number = 1) {
+async function fetchTrainings(page: number = 1) {
   const isFirstPage = page === 1
 
   if (isFirstPage) {
@@ -29,26 +29,26 @@ async function fetchCatalogs(page: number = 1) {
   try {
     const result = await provider.paginate({
       page,
-      limit: 50,
+      limit: 24,
       orderBy: "publishedAt",
       order: "desc",
     })
 
     const items = result.items || []
 
-    catalogs.value = isFirstPage
+    trainings.value = isFirstPage
       ? items
-      : [...catalogs.value, ...items]
+      : [...trainings.value, ...items]
 
     currentPage.value = result.page || page
     totalItems.value = result.total || items.length
     totalPages.value = Math.max(
       1,
-      Math.ceil((result.total || items.length) / (result.limit || 50))
+      Math.ceil((result.total || items.length) / (result.limit || 24))
     )
   } catch (err) {
-    console.error("Error loading resource catalogs:", err)
-    error.value = "No fue posible cargar los catálogos disponibles en este momento."
+    console.error("Error loading trainings:", err)
+    error.value = "No fue posible cargar los entrenamientos disponibles en este momento."
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -60,7 +60,7 @@ async function loadMore() {
     return
   }
 
-  await fetchCatalogs(currentPage.value + 1)
+  await fetchTrainings(currentPage.value + 1)
 }
 
 function formatDate(date?: Date) {
@@ -73,21 +73,27 @@ function formatDate(date?: Date) {
   }).format(new Date(date))
 }
 
-function getResourceCount(catalog: IResourceCatalog) {
-  return (catalog.resources || []).filter((resource) => resource.enabled !== false).length
+function getSlideCount(training: ITraining) {
+  return (training.slides || []).filter((slide) => slide.enabled !== false).length
 }
 
-function getCatalogTags(catalog: IResourceCatalog) {
-  return catalog.tags || []
+function getQuizCount(training: ITraining) {
+  return (training.slides || []).reduce((count, slide) => {
+    return count + (slide.quiz?.length || 0)
+  }, 0)
+}
+
+function getTrainingTags(training: ITraining) {
+  return training.tags || []
 }
 
 onMounted(() => {
-  void fetchCatalogs()
+  void fetchTrainings()
 })
 </script>
 
 <template>
-  <v-container fluid class="resource-catalog-gallery px-0">
+  <v-container fluid class="training-gallery px-0">
     <section class="gallery-hero">
       <v-container class="py-10 py-md-14">
         <div class="hero-shell">
@@ -98,18 +104,21 @@ onMounted(() => {
               size="small"
               class="mb-4"
             >
-              Biblioteca de catálogos
+              Biblioteca de trainings
             </v-chip>
 
             <h1 class="text-h3 text-md-h2 font-weight-bold mb-4">
-              Explorá catálogos curados para entrenamientos y recursos
+              Navegá entrenamientos completos para presentar, aprender o adaptar
             </h1>
 
+            <p class="text-body-1 text-md-h6 mb-6 hero-support-text">
+              Encontrá capacitaciones con slides, materiales y cuestionarios listas para abrir en modo presentación.
+            </p>
 
             <div class="hero-stats">
               <div class="hero-stat-card">
-                <div class="text-h5 font-weight-bold">{{ totalItems || catalogs.length }}</div>
-                <div class="text-body-2 hero-support-text">Catálogos detectados</div>
+                <div class="text-h5 font-weight-bold">{{ totalItems || trainings.length }}</div>
+                <div class="text-body-2 hero-support-text">Trainings detectados</div>
               </div>
 
               <div class="hero-stat-card">
@@ -143,12 +152,12 @@ onMounted(() => {
         {{ error }}
       </v-alert>
 
-      <template v-else-if="hasCatalogs">
+      <template v-else-if="hasTrainings">
         <div class="d-flex flex-column flex-md-row align-md-end justify-space-between mb-6 ga-3">
           <div>
-            <h2 class="text-h5 font-weight-bold mb-1">Galería de catálogos</h2>
+            <h2 class="text-h5 font-weight-bold mb-1">Galería de trainings</h2>
             <p class="text-body-2 text-medium-emphasis">
-              {{ catalogs.length }} cargados de {{ totalItems }} disponibles
+              {{ trainings.length }} cargados de {{ totalItems }} disponibles
             </p>
           </div>
 
@@ -165,8 +174,8 @@ onMounted(() => {
 
         <v-row>
           <v-col
-            v-for="catalog in catalogs"
-            :key="catalog._id"
+            v-for="training in trainings"
+            :key="training._id"
             cols="12"
             sm="6"
             lg="4"
@@ -174,7 +183,7 @@ onMounted(() => {
             <v-card
               class="catalog-card h-100"
               elevation="0"
-              :to="{ name: 'ResourceCatalogPage', params: { catalogId: catalog.slug || catalog._id } }"
+              :to="{ name: 'TrainingPage', params: { trainingId: training.slug || training._id } }"
             >
               <v-card-text class="catalog-card-content pa-6">
                 <div class="d-flex flex-wrap ga-2 mb-4">
@@ -183,42 +192,57 @@ onMounted(() => {
                     color="primary"
                     variant="flat"
                   >
-                    {{ catalog.category || "Catálogo" }}
+                    {{ training.category || "Training" }}
                   </v-chip>
 
                   <v-chip
-                    v-if="catalog.status"
+                    v-if="training.status"
                     size="small"
                     variant="tonal"
                   >
-                    {{ catalog.status }}
+                    {{ training.status }}
                   </v-chip>
                 </div>
 
                 <div class="d-flex align-center justify-space-between ga-3 mb-3">
                   <div class="text-overline text-medium-emphasis">
-                    {{ formatDate(catalog.publishedAt || catalog.createdAt) || "Sin fecha publicada" }}
+                    {{ formatDate(training.publishedAt || training.updatedAt || training.createdAt) || "Sin fecha publicada" }}
                   </div>
 
                   <v-chip size="small" variant="outlined">
-                    {{ getResourceCount(catalog) }} recursos
+                    {{ getSlideCount(training) }} slides
                   </v-chip>
                 </div>
 
                 <h3 class="text-h6 font-weight-bold mb-3">
-                  {{ catalog.name }}
+                  {{ training.name }}
                 </h3>
 
                 <p class="text-body-2 text-medium-emphasis mb-4 catalog-description">
-                  {{ catalog.description || "Colección curada de recursos lista para explorar." }}
+                  {{ training.description || "Entrenamiento listo para explorar, presentar y adaptar según el contexto de formación." }}
                 </p>
 
+                <div class="d-flex flex-wrap ga-2 mb-4">
+                  <v-chip size="small" variant="outlined">
+                    {{ getQuizCount(training) }} preguntas
+                  </v-chip>
+
+                  <v-chip
+                    v-if="training.isPublic"
+                    size="small"
+                    color="success"
+                    variant="tonal"
+                  >
+                    Público
+                  </v-chip>
+                </div>
+
                 <div
-                  v-if="getCatalogTags(catalog).length"
+                  v-if="getTrainingTags(training).length"
                   class="d-flex flex-wrap ga-2"
                 >
                   <v-chip
-                    v-for="tag in getCatalogTags(catalog)"
+                    v-for="tag in getTrainingTags(training)"
                     :key="tag"
                     size="small"
                     variant="outlined"
@@ -234,7 +258,7 @@ onMounted(() => {
                   variant="flat"
                   block
                 >
-                  Ver catálogo
+                  Ver training
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -262,14 +286,14 @@ onMounted(() => {
         type="info"
         variant="tonal"
       >
-        No hay catálogos disponibles para mostrar.
+        No hay trainings disponibles para mostrar.
       </v-alert>
     </v-container>
   </v-container>
 </template>
 
 <style scoped>
-.resource-catalog-gallery {
+.training-gallery {
   min-height: 100%;
 }
 

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from "vue";
-import ResourceCatalogProvider from "../providers/ResourceCatalogProvider";
-import type {IResourceCatalog} from "../interfaces/IResourceCatalog";
+import ConceptCatalogProvider from "../providers/ConceptCatalogProvider";
+import type {IConceptCatalog} from "../interfaces/IConceptCatalog";
 
-const provider = ResourceCatalogProvider.instance
+const provider = ConceptCatalogProvider.instance
 
-const catalogs = ref<IResourceCatalog[]>([])
+const catalogs = ref<IConceptCatalog[]>([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const error = ref("")
@@ -30,7 +30,7 @@ async function fetchCatalogs(page: number = 1) {
     const result = await provider.paginate({
       page,
       limit: 50,
-      orderBy: "publishedAt",
+      orderBy: "updatedAt",
       order: "desc",
     })
 
@@ -47,8 +47,8 @@ async function fetchCatalogs(page: number = 1) {
       Math.ceil((result.total || items.length) / (result.limit || 50))
     )
   } catch (err) {
-    console.error("Error loading resource catalogs:", err)
-    error.value = "No fue posible cargar los catálogos disponibles en este momento."
+    console.error("Error loading concept catalogs:", err)
+    error.value = "No fue posible cargar los catálogos conceptuales disponibles en este momento."
   } finally {
     loading.value = false
     loadingMore.value = false
@@ -73,12 +73,8 @@ function formatDate(date?: Date) {
   }).format(new Date(date))
 }
 
-function getResourceCount(catalog: IResourceCatalog) {
-  return (catalog.resources || []).filter((resource) => resource.enabled !== false).length
-}
-
-function getCatalogTags(catalog: IResourceCatalog) {
-  return catalog.tags || []
+function getConceptCount(catalog: IConceptCatalog) {
+  return (catalog.concepts || []).length
 }
 
 onMounted(() => {
@@ -87,24 +83,27 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container fluid class="resource-catalog-gallery px-0">
+  <v-container fluid class="concept-catalog-gallery px-0">
     <section class="gallery-hero">
       <v-container class="py-10 py-md-14">
         <div class="hero-shell">
           <div class="hero-copy">
             <v-chip
-              color="primary"
+              color="secondary"
               variant="flat"
               size="small"
               class="mb-4"
             >
-              Biblioteca de catálogos
+              Biblioteca conceptual
             </v-chip>
 
             <h1 class="text-h3 text-md-h2 font-weight-bold mb-4">
-              Explorá catálogos curados para entrenamientos y recursos
+              Explorá catálogos de conceptos listos para estudiar y reutilizar
             </h1>
 
+            <p class="text-body-1 text-md-h6 mb-6 hero-support-text">
+              Accedé a marcos teóricos, definiciones prácticas y ejemplos para entrenamientos, talleres y sesiones de aprendizaje.
+            </p>
 
             <div class="hero-stats">
               <div class="hero-stat-card">
@@ -146,7 +145,7 @@ onMounted(() => {
       <template v-else-if="hasCatalogs">
         <div class="d-flex flex-column flex-md-row align-md-end justify-space-between mb-6 ga-3">
           <div>
-            <h2 class="text-h5 font-weight-bold mb-1">Galería de catálogos</h2>
+            <h2 class="text-h5 font-weight-bold mb-1">Galería conceptual</h2>
             <p class="text-body-2 text-medium-emphasis">
               {{ catalogs.length }} cargados de {{ totalItems }} disponibles
             </p>
@@ -154,7 +153,7 @@ onMounted(() => {
 
           <v-btn
             v-if="hasMorePages"
-            color="primary"
+            color="secondary"
             variant="outlined"
             :loading="loadingMore"
             @click="loadMore"
@@ -174,63 +173,49 @@ onMounted(() => {
             <v-card
               class="catalog-card h-100"
               elevation="0"
-              :to="{ name: 'ResourceCatalogPage', params: { catalogId: catalog.slug || catalog._id } }"
+              :to="{ name: 'ConceptCatalogPage', params: { catalogId: catalog.slug || catalog._id } }"
             >
               <v-card-text class="catalog-card-content pa-6">
                 <div class="d-flex flex-wrap ga-2 mb-4">
                   <v-chip
                     size="small"
-                    color="primary"
+                    color="secondary"
                     variant="flat"
                   >
-                    {{ catalog.category || "Catálogo" }}
+                    Catálogo conceptual
                   </v-chip>
 
                   <v-chip
-                    v-if="catalog.status"
+                    v-if="catalog.slug"
                     size="small"
                     variant="tonal"
                   >
-                    {{ catalog.status }}
+                    {{ catalog.slug }}
                   </v-chip>
                 </div>
 
                 <div class="d-flex align-center justify-space-between ga-3 mb-3">
                   <div class="text-overline text-medium-emphasis">
-                    {{ formatDate(catalog.publishedAt || catalog.createdAt) || "Sin fecha publicada" }}
+                    {{ formatDate(catalog.updatedAt || catalog.createdAt) || "Sin fecha disponible" }}
                   </div>
 
                   <v-chip size="small" variant="outlined">
-                    {{ getResourceCount(catalog) }} recursos
+                    {{ getConceptCount(catalog) }} conceptos
                   </v-chip>
                 </div>
 
                 <h3 class="text-h6 font-weight-bold mb-3">
-                  {{ catalog.name }}
+                  {{ catalog.title }}
                 </h3>
 
                 <p class="text-body-2 text-medium-emphasis mb-4 catalog-description">
-                  {{ catalog.description || "Colección curada de recursos lista para explorar." }}
+                  {{ catalog.descripcion || "Colección de conceptos explicados para ordenar teoría, utilidad y ejemplos de aplicación." }}
                 </p>
-
-                <div
-                  v-if="getCatalogTags(catalog).length"
-                  class="d-flex flex-wrap ga-2"
-                >
-                  <v-chip
-                    v-for="tag in getCatalogTags(catalog)"
-                    :key="tag"
-                    size="small"
-                    variant="outlined"
-                  >
-                    {{ tag }}
-                  </v-chip>
-                </div>
               </v-card-text>
 
               <v-card-actions class="px-6 pb-6 pt-0">
                 <v-btn
-                  color="primary"
+                  color="secondary"
                   variant="flat"
                   block
                 >
@@ -246,7 +231,7 @@ onMounted(() => {
           class="d-flex justify-center mt-8"
         >
           <v-btn
-            color="primary"
+            color="secondary"
             variant="outlined"
             size="large"
             :loading="loadingMore"
@@ -262,14 +247,14 @@ onMounted(() => {
         type="info"
         variant="tonal"
       >
-        No hay catálogos disponibles para mostrar.
+        No hay catálogos conceptuales disponibles para mostrar.
       </v-alert>
     </v-container>
   </v-container>
 </template>
 
 <style scoped>
-.resource-catalog-gallery {
+.concept-catalog-gallery {
   min-height: 100%;
 }
 
@@ -277,20 +262,21 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(var(--v-theme-primary), 0.24), transparent 32%),
-    linear-gradient(135deg, rgba(10, 17, 30, 0.98), rgba(20, 31, 47, 0.94));
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.26), transparent 30%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 24%),
+    linear-gradient(145deg, #0f172a, #11352f 58%, #163c4a);
   color: rgba(255, 255, 255, 0.96);
 }
 
 .gallery-hero::after {
   content: "";
   position: absolute;
-  inset: auto -100px -120px auto;
-  width: 280px;
-  height: 280px;
+  inset: auto auto -140px -80px;
+  width: 320px;
+  height: 320px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  filter: blur(8px);
+  background: rgba(255, 255, 255, 0.06);
+  filter: blur(10px);
 }
 
 .hero-shell {
@@ -303,7 +289,7 @@ onMounted(() => {
 }
 
 .hero-support-text {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(236, 253, 245, 0.88);
 }
 
 .hero-stats {
@@ -334,7 +320,7 @@ onMounted(() => {
 .catalog-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
-  border-color: rgba(var(--v-theme-primary), 0.24);
+  border-color: rgba(var(--v-theme-secondary), 0.24);
 }
 
 .catalog-card-content {

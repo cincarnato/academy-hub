@@ -17,7 +17,16 @@ class ResourceCatalogProvider extends AbstractCrudRestProvider<IResourceCatalog,
     return ResourceCatalogProvider.singleton
   }
 
+  async findByIdOrSlug(value: string): Promise<IResourceCatalog> {
+    try {
+      return await this.findOne({
+        filters: [{field: 'slug', operator: 'eq', value}]
+      })
+    } catch {
+      return await this.findById(value)
+    }
+  }
+
 }
 
 export default ResourceCatalogProvider
-

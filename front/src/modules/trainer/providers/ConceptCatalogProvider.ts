@@ -17,7 +17,16 @@ class ConceptCatalogProvider extends AbstractCrudRestProvider<IConceptCatalog, I
     return ConceptCatalogProvider.singleton
   }
 
+  async findByIdOrSlug(value: string): Promise<IConceptCatalog> {
+    try {
+      return await this.findOne({
+        filters: [{field: 'slug', operator: 'eq', value}]
+      })
+    } catch {
+      return await this.findById(value)
+    }
+  }
+
 }
 
 export default ConceptCatalogProvider
-

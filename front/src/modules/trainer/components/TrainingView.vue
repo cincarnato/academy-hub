@@ -44,7 +44,7 @@ async function loadTraining() {
   error.value = ""
 
   try {
-    training.value = await provider.findById(props.trainingId)
+    training.value = await provider.findByIdOrSlug(props.trainingId)
     activeSlideIndex.value = 0
     showPresentationQuiz.value = false
   } catch (err) {

@@ -5,7 +5,8 @@ import {Crud} from "@drax/crud-vue";
 import type {IConceptCatalog} from "../../interfaces/IConceptCatalog";
 
 function getConceptCatalogHref(item: unknown) {
-  return `/concept-catalog/${(item as IConceptCatalog)._id}`
+  const catalog = item as IConceptCatalog
+  return `/concept-catalog/${catalog.slug || catalog._id}`
 }
 
 </script>

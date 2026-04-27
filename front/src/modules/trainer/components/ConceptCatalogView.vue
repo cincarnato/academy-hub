@@ -34,7 +34,7 @@ async function loadCatalog() {
   error.value = ""
 
   try {
-    catalog.value = await provider.findById(props.catalogId)
+    catalog.value = await provider.findByIdOrSlug(props.catalogId)
   } catch (err) {
     console.error("Error loading concept catalog:", err)
     catalog.value = null

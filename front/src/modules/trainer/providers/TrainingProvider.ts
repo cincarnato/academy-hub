@@ -58,6 +58,16 @@ class TrainingProvider extends AbstractCrudRestProvider<ITraining, ITrainingBase
     return TrainingProvider.singleton
   }
 
+  async findByIdOrSlug(value: string): Promise<ITraining> {
+    try {
+      return await this.findOne({
+        filters: [{field: 'slug', operator: 'eq', value}]
+      })
+    } catch {
+      return await this.findById(value)
+    }
+  }
+
   async promptAI<T>(data: {
     systemPrompt: string
     userInput: string

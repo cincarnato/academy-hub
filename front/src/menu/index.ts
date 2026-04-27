@@ -10,6 +10,38 @@ const menu: MenuItem[] = [
   },
   {
     icon: 'mdi-account-circle',
+    text: 'Galerias',
+    gallery: true,
+    children: [
+
+      {
+        icon: 'mdi-presentation',
+        text:'Galería Trainings',
+        link: { name: "TrainingGalleryPage" },
+        gallery: true,
+        auth: false
+      },
+
+      {
+        icon: 'mdi-book-open-page-variant-outline',
+        text:'Galería Conceptos',
+        link: { name: "ConceptCatalogGalleryPage" },
+        gallery: true,
+        auth: false
+      },
+
+      {
+        icon: 'mdi-view-grid-outline',
+        text:'Galería Catálogos',
+        link: { name: "ResourceCatalogGalleryPage" },
+        gallery: true,
+        auth: false
+      },
+
+    ]
+  },
+  {
+    icon: 'mdi-account-circle',
     text: 'Academy',
     gallery: true,
     children: [
@@ -20,6 +52,7 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'training:manage'
       },
+
       {
         icon: 'mdi-lightbulb-on-outline',
         text:'conceptcatalog.menu',
@@ -27,6 +60,7 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'conceptcatalog:manage'
       },
+
       {
         icon: 'mdi-bookshelf',
         text:'resourcecatalog.menu',
@@ -34,13 +68,7 @@ const menu: MenuItem[] = [
         gallery: true,
         permission: 'resourcecatalog:manage'
       },
-      {
-        icon: 'mdi-view-grid-outline',
-        text:'Galería Catálogos',
-        link: { name: "ResourceCatalogGalleryPage" },
-        gallery: true,
-        auth: false
-      },
+
       {
         icon: 'mdi-file-upload',
         text:'fileasset.menu',

@@ -6,7 +6,8 @@ import {formatDate} from "@drax/common-front"
 import type {IResourceCatalog} from "../../interfaces/IResourceCatalog";
 
 function getResourceCatalogHref(item: unknown) {
-  return `/resource-catalog/${(item as IResourceCatalog)._id}`
+  const catalog = item as IResourceCatalog
+  return `/resource-catalog/${catalog.slug || catalog._id}`
 }
 </script>
 

@@ -51,7 +51,7 @@ async function loadCatalog() {
   error.value = ""
 
   try {
-    catalog.value = await provider.findById(props.catalogId)
+    catalog.value = await provider.findByIdOrSlug(props.catalogId)
   } catch (err) {
     console.error("Error loading resource catalog:", err)
     catalog.value = null
