@@ -118,7 +118,7 @@ watch(() => props.catalogId, () => {
 
         <template v-else-if="catalog">
           <v-row align="stretch" class="ga-0">
-            <v-col cols="12" md="7">
+            <v-col cols="12" >
               <div class="hero-copy">
                 <div class="d-flex flex-wrap align-center ga-3 mb-5">
                   <v-chip
@@ -174,52 +174,7 @@ watch(() => props.catalogId, () => {
               </div>
             </v-col>
 
-            <v-col cols="12" md="5">
-              <v-card class="hero-panel" elevation="0">
-                <v-img
-                  v-if="catalog.coverImageUrl"
-                  :src="catalog.coverImageUrl"
-                  height="220"
-                  cover
-                  class="hero-image"
-                />
 
-                <v-card-text class="pa-6">
-                  <div class="text-overline mb-2">Selección inicial</div>
-                  <div class="text-h6 font-weight-bold mb-4">
-                    Recursos destacados
-                  </div>
-
-                  <div class="d-flex flex-column ga-3">
-                    <div
-                      v-for="resource in featuredResources"
-                      :key="`${resource.name}-${resource.url}`"
-                      class="featured-item"
-                    >
-                      <div class="d-flex align-start ga-3">
-                        <v-avatar rounded="lg" size="48" class="featured-avatar">
-                          <v-img
-                            v-if="resource.logoUrl || resource.imageUrl"
-                            :src="resource.logoUrl || resource.imageUrl"
-                            cover
-                          />
-                          <span v-else class="text-subtitle-2 font-weight-bold">
-                            {{ resource.name.slice(0, 1).toUpperCase() }}
-                          </span>
-                        </v-avatar>
-
-                        <div class="flex-grow-1">
-                          <div class="text-subtitle-1 font-weight-medium">{{ resource.name }}</div>
-                          <div class="text-body-2 hero-support-text">
-                            {{ resource.company || resource.creator || getDomainLabel(resource.url) }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
           </v-row>
         </template>
       </v-container>
@@ -362,7 +317,7 @@ watch(() => props.catalogId, () => {
 }
 
 .hero-description {
-  max-width: 58ch;
+  //max-width: 90ch;
 }
 
 .hero-meta-text {
