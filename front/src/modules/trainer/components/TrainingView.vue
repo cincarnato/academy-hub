@@ -2,6 +2,7 @@
 import {computed, onMounted, ref, watch} from "vue";
 import TrainingProvider from "../providers/TrainingProvider";
 import type {ITraining} from "../interfaces/ITraining";
+import TrainingQuizPanel from "./TrainingQuizPanel.vue";
 
 interface Props {
   trainingId: string
@@ -16,10 +17,8 @@ const loading = ref(false)
 const error = ref("")
 const training = ref<ITraining | null>(null)
 const activeSlideIndex = ref(0)
-const showQuiz = ref(false)
 const isPresentationOpen = ref(false)
-const openTextAnswers = ref<Record<string, string>>({})
-const selectedAnswers = ref<Record<string, Array<number>>>({})
+const showPresentationQuiz = ref(false)
 
 const slides = computed(() => {
   return (training.value?.slides || []).filter((slide) => slide.enabled !== false)
@@ -28,6 +27,8 @@ const globalSlideCss = computed(() => String(training.value?.globalSlideCss || "
 
 const activeSlide = computed(() => slides.value[activeSlideIndex.value] || null)
 const activeQuiz = computed(() => activeSlide.value?.quiz || [])
+const activeQuizKey = computed(() => `${props.trainingId}-${activeSlideIndex.value}`)
+const activePresentationQuizKey = computed(() => `${activeQuizKey.value}-presentation`)
 const canGoPrev = computed(() => activeSlideIndex.value > 0)
 const canGoNext = computed(() => activeSlideIndex.value < slides.value.length - 1)
 const totalSlides = computed(() => slides.value.length)
@@ -45,7 +46,7 @@ async function loadTraining() {
   try {
     training.value = await provider.findById(props.trainingId)
     activeSlideIndex.value = 0
-    showQuiz.value = false
+    showPresentationQuiz.value = false
   } catch (err) {
     console.error("Error loading training:", err)
     training.value = null
@@ -77,6 +78,7 @@ function openPresentationMode() {
 
 function closePresentationMode() {
   isPresentationOpen.value = false
+  showPresentationQuiz.value = false
 }
 
 function renderSlideContent(slide: TrainingSlide) {
@@ -95,37 +97,6 @@ function hasQuiz(slide: TrainingSlide | null) {
   return Boolean(slide?.quiz?.length)
 }
 
-function getQuizKey(quizIndex: number) {
-  return `${activeSlideIndex.value}-${quizIndex}`
-}
-
-function getSelectedAnswers(quizIndex: number) {
-  return selectedAnswers.value[getQuizKey(quizIndex)] || []
-}
-
-function setSingleAnswer(quizIndex: number, answerIndex: number | null) {
-  const key = getQuizKey(quizIndex)
-  selectedAnswers.value[key] = answerIndex === null ? [] : [answerIndex]
-}
-
-function toggleMultipleAnswer(quizIndex: number, answerIndex: number, checked: boolean | null) {
-  const key = getQuizKey(quizIndex)
-  const current = new Set(selectedAnswers.value[key] || [])
-
-  if (checked) current.add(answerIndex)
-  else current.delete(answerIndex)
-
-  selectedAnswers.value[key] = Array.from(current)
-}
-
-function getOpenTextAnswer(quizIndex: number) {
-  return openTextAnswers.value[getQuizKey(quizIndex)] || ""
-}
-
-function setOpenTextAnswer(quizIndex: number, value: string) {
-  openTextAnswers.value[getQuizKey(quizIndex)] = value
-}
-
 function getFileLabel(filepath?: string) {
   if (!filepath) return "Archivo"
   return filepath.split("/").pop() || filepath
@@ -136,7 +107,7 @@ watch(() => props.trainingId, () => {
 })
 
 watch(activeSlideIndex, () => {
-  showQuiz.value = false
+  showPresentationQuiz.value = false
 })
 
 onMounted(() => {
@@ -146,12 +117,10 @@ onMounted(() => {
 
 <template>
   <v-container fluid class="px-0">
-    <v-container class="py-4 py-md-8">
       <v-skeleton-loader
         v-if="loading"
         type="article, image, actions"
         class="mx-auto"
-        max-width="1400"
       />
 
       <v-alert
@@ -160,7 +129,6 @@ onMounted(() => {
         variant="tonal"
         border="start"
         class="mx-auto"
-        max-width="1400"
       >
         {{ error }}
       </v-alert>
@@ -174,7 +142,7 @@ onMounted(() => {
           {{ globalSlideCss }}
         </component>
 
-        <v-card class="mx-auto" max-width="1400" rounded="xl">
+        <v-card class="mx-auto"  rounded="xl">
           <v-card-item class="pa-4 pa-md-6">
             <div class="d-flex flex-column flex-md-row justify-space-between ga-4">
               <div>
@@ -329,90 +297,10 @@ onMounted(() => {
                     class="mt-8"
                   >
                     <v-divider class="mb-4" />
-
-                    <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3 mb-4">
-                      <div>
-                        <div class="text-subtitle-1 font-weight-bold">Quiz del slide</div>
-                        <div class="text-body-2 text-medium-emphasis">
-                          {{ activeQuiz.length }} pregunta<span v-if="activeQuiz.length !== 1">s</span>
-                        </div>
-                      </div>
-
-                      <v-btn
-                        variant="flat"
-                        color="primary"
-                        @click="showQuiz = !showQuiz"
-                      >
-                        {{ showQuiz ? "Ocultar quiz" : "Iniciar quiz" }}
-                      </v-btn>
-                    </div>
-
-                    <div v-if="showQuiz" class="d-flex flex-column ga-4">
-                      <v-card
-                        v-for="(question, quizIndex) in activeQuiz"
-                        :key="`${question.question}-${quizIndex}`"
-                        variant="outlined"
-                        rounded="xl"
-                      >
-                        <v-card-text class="pa-4 pa-md-5">
-                          <div class="text-overline mb-2">Pregunta {{ quizIndex + 1 }}</div>
-                          <div class="text-subtitle-1 font-weight-bold mb-2">
-                            {{ question.question }}
-                          </div>
-                          <p v-if="question.description" class="text-body-2 text-medium-emphasis mb-4">
-                            {{ question.description }}
-                          </p>
-
-                          <div v-if="question.type === 'single_choice'" class="d-flex flex-column ga-3">
-                            <v-radio-group
-                              :model-value="getSelectedAnswers(quizIndex)[0] ?? null"
-                              color="primary"
-                              hide-details
-                              @update:model-value="setSingleAnswer(quizIndex, $event)"
-                            >
-                              <v-radio
-                                v-for="(answer, answerIndex) in question.answers || []"
-                                :key="`${answer.answer}-${answerIndex}`"
-                                :label="answer.answer"
-                                :value="answerIndex"
-                              />
-                            </v-radio-group>
-                          </div>
-
-                          <div v-else-if="question.type === 'multiple_choice'" class="d-flex flex-column ga-2">
-                            <v-checkbox
-                              v-for="(answer, answerIndex) in question.answers || []"
-                              :key="`${answer.answer}-${answerIndex}`"
-                              :label="answer.answer"
-                              :model-value="getSelectedAnswers(quizIndex).includes(answerIndex)"
-                              color="primary"
-                              hide-details
-                              @update:model-value="toggleMultipleAnswer(quizIndex, answerIndex, $event)"
-                            />
-                          </div>
-
-                          <div v-else>
-                            <v-textarea
-                              :model-value="getOpenTextAnswer(quizIndex)"
-                              label="Tu respuesta"
-                              variant="outlined"
-                              rows="4"
-                              hide-details
-                              @update:model-value="setOpenTextAnswer(quizIndex, String($event || ''))"
-                            />
-                          </div>
-
-                          <v-alert
-                            v-if="question.explanation"
-                            type="info"
-                            variant="tonal"
-                            class="mt-4"
-                          >
-                            {{ question.explanation }}
-                          </v-alert>
-                        </v-card-text>
-                      </v-card>
-                    </div>
+                    <TrainingQuizPanel
+                      :questions="activeQuiz"
+                      :quiz-key="activeQuizKey"
+                    />
                   </div>
                 </v-card-text>
               </v-card>
@@ -477,6 +365,12 @@ onMounted(() => {
                   @click="goToPrevSlide"
                 />
                 <v-btn
+                  v-if="hasQuiz(activeSlide)"
+                  :icon="showPresentationQuiz ? 'mdi-help-circle' : 'mdi-help-circle-outline'"
+                  variant="tonal"
+                  @click="showPresentationQuiz = !showPresentationQuiz"
+                />
+                <v-btn
                   icon="mdi-chevron-right"
                   variant="tonal"
                   :disabled="!canGoNext"
@@ -494,6 +388,19 @@ onMounted(() => {
             </v-toolbar>
 
             <v-card-text class="presentation-content pa-0">
+              <div
+                v-if="showPresentationQuiz && hasQuiz(activeSlide)"
+                class="presentation-quiz px-3 px-md-6 pt-3 pb-4"
+              >
+                <TrainingQuizPanel
+                  :questions="activeQuiz"
+                  :quiz-key="activePresentationQuizKey"
+                  :initially-open="true"
+                  :hide-activator="true"
+                  :compact="true"
+                />
+              </div>
+
               <div class="presentation-slide">
                 <div
                   v-if="shouldRenderAsHtml(activeSlide)"
@@ -512,7 +419,6 @@ onMounted(() => {
           </v-card>
         </v-dialog>
       </template>
-    </v-container>
   </v-container>
 </template>
 
@@ -576,7 +482,8 @@ onMounted(() => {
 
 .presentation-content {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   flex: 1;
   width: 100%;
   padding: 0;
@@ -587,9 +494,14 @@ onMounted(() => {
 
 .presentation-slide {
   width: 100%;
-  max-height: 100%;
+  flex: 1;
   overflow: auto;
   padding: 0;
+}
+
+.presentation-quiz {
+  width: min(100%, 1080px);
+  margin: 0 auto;
 }
 
 @media (min-width: 960px) {

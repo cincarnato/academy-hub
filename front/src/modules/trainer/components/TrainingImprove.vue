@@ -1,32 +1,39 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from "vue";
 import TrainingProvider from "../providers/TrainingProvider";
-import type {ITraining, ITrainingBase} from "../interfaces/ITraining";
+import type {
+  ITraining,
+  ITrainingBase,
+  ITrainingQuizAnswer,
+  ITrainingQuizQuestion,
+  ITrainingSlide,
+} from "../interfaces/ITraining";
 
 interface Props {
   trainingId: string
 }
 
-type TrainingSlide = NonNullable<ITraining["slides"]>[number]
+type TrainingSlide = ITrainingSlide
 
 const props = defineProps<Props>()
 const provider = TrainingProvider.instance
 
 const loading = ref(false)
 const saving = ref(false)
-const aiLoading = ref<'theme' | 'slide' | 'improve' | ''>('')
+const aiLoading = ref<'theme' | 'slide' | 'improve' | 'quiz' | ''>('')
 const error = ref("")
 const successMessage = ref("")
 const aiFeedback = ref("")
 
 const training = ref<ITraining | null>(null)
 const selectedSlideIndex = ref(0)
-const activeTab = ref<"theme" | "slide" | "improve">("theme")
+const activeTab = ref<"theme" | "slide" | "improve" | "quiz">("theme")
 const improvePreviewTab = ref<"current" | "improved">("current")
 
 const themePrompt = ref("")
 const newSlidePrompt = ref("")
 const improvePrompt = ref("")
+const quizPrompt = ref("")
 
 const slides = computed(() => training.value?.slides || [])
 const selectedSlide = computed(() => slides.value[selectedSlideIndex.value] || null)
@@ -38,6 +45,7 @@ const slideContentTypeOptions = [
 const themePreview = ref("")
 const generatedSlidePreview = ref<TrainingSlide | null>(null)
 const improvedSlidePreview = ref<TrainingSlide | null>(null)
+const generatedQuizPreview = ref<Array<ITrainingQuizQuestion>>([])
 
 async function loadTraining() {
   if (!props.trainingId) {
@@ -72,6 +80,40 @@ function normalizeSlide(slide: Partial<TrainingSlide>): TrainingSlide {
     quiz: Array.isArray(slide.quiz) ? slide.quiz : [],
     enabled: slide.enabled !== false,
   }
+}
+
+function normalizeQuizAnswer(answer: Partial<ITrainingQuizAnswer>): ITrainingQuizAnswer {
+  return {
+    answer: String(answer.answer || "").trim(),
+    points: typeof answer.points === "number" ? answer.points : 0,
+    isCorrect: Boolean(answer.isCorrect),
+    feedback: String(answer.feedback || "").trim(),
+  }
+}
+
+function normalizeQuizQuestion(question: Partial<ITrainingQuizQuestion>): ITrainingQuizQuestion {
+  const type = String(question.type || "").trim()
+  const normalizedType = ["single_choice", "multiple_choice", "open_text"].includes(type)
+    ? type
+    : "single_choice"
+
+  return {
+    question: String(question.question || "").trim(),
+    description: String(question.description || "").trim(),
+    type: normalizedType,
+    answers: Array.isArray(question.answers)
+      ? question.answers.map((answer) => normalizeQuizAnswer(answer)).filter((answer) => answer.answer)
+      : [],
+    required: question.required !== false,
+    explanation: String(question.explanation || "").trim(),
+  }
+}
+
+function normalizeQuiz(quiz: Array<Partial<ITrainingQuizQuestion>> | undefined | null) {
+  if (!Array.isArray(quiz)) return []
+  return quiz
+    .map((question) => normalizeQuizQuestion(question))
+    .filter((question) => question.question)
 }
 
 function buildUpdatePayload(nextTraining: ITraining): ITrainingBase {
@@ -228,6 +270,51 @@ async function handleImproveSlide() {
   }
 }
 
+async function handleGenerateQuiz() {
+  if (!training.value || !selectedSlide.value) return
+  if (!quizPrompt.value.trim()) {
+    error.value = "Ingresá un prompt para generar el quiz de la slide seleccionada."
+    return
+  }
+
+  aiLoading.value = "quiz"
+  error.value = ""
+  successMessage.value = ""
+
+  try {
+    const response = await provider.generateQuizFromPrompt(
+      training.value,
+      selectedSlide.value,
+      quizPrompt.value.trim(),
+    )
+    const nextQuiz = normalizeQuiz(response.output?.quiz)
+
+    if (!nextQuiz.length) {
+      error.value = "La IA no devolvió preguntas válidas para el quiz."
+      return
+    }
+
+    aiFeedback.value = String(response.output?.rationale || "")
+    generatedQuizPreview.value = nextQuiz
+
+    const nextSlides = slides.value.map((slide, index) => (
+      index === selectedSlideIndex.value
+        ? {...slide, quiz: nextQuiz}
+        : slide
+    ))
+
+    await persistTraining({
+      ...training.value,
+      slides: nextSlides,
+    }, "Quiz generado y guardado en la slide seleccionada.")
+  } catch (err) {
+    console.error("Error generating quiz:", err)
+    error.value = "No fue posible generar el quiz con IA."
+  } finally {
+    aiLoading.value = ""
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -280,6 +367,7 @@ watch(() => props.trainingId, () => {
 
 watch(selectedSlideIndex, () => {
   improvedSlidePreview.value = null
+  generatedQuizPreview.value = []
   successMessage.value = ""
   error.value = ""
 })
@@ -395,6 +483,10 @@ onMounted(() => {
                   Slide seleccionada:
                   {{ selectedSlide?.title || "ninguna" }}
                 </div>
+                <div class="mb-3">
+                  Preguntas en la slide:
+                  {{ selectedSlide?.quiz?.length || 0 }}
+                </div>
                 <div v-if="aiFeedback">
                   Motivo IA: {{ aiFeedback }}
                 </div>
@@ -413,6 +505,7 @@ onMounted(() => {
                 <v-tab value="theme">Theme CSS</v-tab>
                 <v-tab value="slide">Nueva slide</v-tab>
                 <v-tab value="improve">Mejorar slide</v-tab>
+                <v-tab value="quiz">Generar quiz</v-tab>
               </v-tabs>
 
               <v-divider />
@@ -605,6 +698,131 @@ onMounted(() => {
                           </v-card-text>
                         </v-window-item>
                       </v-window>
+                    </v-card>
+                  </v-card-text>
+                </v-window-item>
+
+                <v-window-item value="quiz">
+                  <v-card-item>
+                    <v-card-title>4. Generar quiz para la slide</v-card-title>
+                    <v-card-subtitle>La IA crea o reemplaza el `quiz` de la slide seleccionada.</v-card-subtitle>
+                  </v-card-item>
+                  <v-card-text>
+                    <v-textarea
+                      v-model="quizPrompt"
+                      label="Prompt del quiz"
+                      placeholder="Ej: Generá 3 preguntas para validar comprensión, con 2 de opción múltiple y 1 abierta, enfocadas en conceptos clave."
+                      rows="3"
+                      auto-grow
+                      variant="outlined"
+                      :disabled="!selectedSlide"
+                    />
+                    <div class="d-flex justify-end mb-4">
+                      <v-btn
+                        color="primary"
+                        variant="tonal"
+                        :loading="aiLoading === 'quiz' || saving"
+                        :disabled="!selectedSlide"
+                        @click="handleGenerateQuiz"
+                      >
+                        Generar quiz
+                      </v-btn>
+                    </div>
+
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex flex-column flex-md-row align-md-center justify-space-between ga-3 mb-4">
+                        <div>
+                          <div class="text-overline">Slide objetivo</div>
+                          <div class="text-h6">{{ selectedSlide?.title || "Ninguna slide seleccionada" }}</div>
+                        </div>
+                        <v-chip size="small" variant="tonal">
+                          {{ generatedQuizPreview.length || selectedSlide?.quiz?.length || 0 }} pregunta<span v-if="(generatedQuizPreview.length || selectedSlide?.quiz?.length || 0) !== 1">s</span>
+                        </v-chip>
+                      </div>
+
+                      <template v-if="generatedQuizPreview.length">
+                        <div class="text-subtitle-1 mb-3">Preview generado</div>
+                        <v-expansion-panels variant="accordion">
+                          <v-expansion-panel
+                            v-for="(question, index) in generatedQuizPreview"
+                            :key="`${question.question}-${index}`"
+                          >
+                            <v-expansion-panel-title>
+                              <div class="d-flex flex-column">
+                                <span>{{ index + 1 }}. {{ question.question }}</span>
+                                <span class="text-caption text-medium-emphasis">{{ question.type }}</span>
+                              </div>
+                            </v-expansion-panel-title>
+                            <v-expansion-panel-text>
+                              <div v-if="question.description" class="mb-3 text-body-2">
+                                {{ question.description }}
+                              </div>
+                              <v-list v-if="question.answers?.length" density="compact" class="py-0 mb-3">
+                                <v-list-item
+                                  v-for="(answer, answerIndex) in question.answers"
+                                  :key="`${answer.answer}-${answerIndex}`"
+                                >
+                                  <v-list-item-title>
+                                    {{ answer.answer }}
+                                  </v-list-item-title>
+                                  <v-list-item-subtitle>
+                                    {{ answer.isCorrect ? "Correcta" : "Incorrecta" }}
+                                    <span v-if="answer.points"> · {{ answer.points }} pts</span>
+                                    <span v-if="answer.feedback"> · {{ answer.feedback }}</span>
+                                  </v-list-item-subtitle>
+                                </v-list-item>
+                              </v-list>
+                              <div v-if="question.explanation" class="text-body-2 text-medium-emphasis">
+                                Explicación: {{ question.explanation }}
+                              </div>
+                            </v-expansion-panel-text>
+                          </v-expansion-panel>
+                        </v-expansion-panels>
+                      </template>
+
+                      <template v-else-if="selectedSlide?.quiz?.length">
+                        <div class="text-subtitle-1 mb-3">Quiz actual</div>
+                        <v-expansion-panels variant="accordion">
+                          <v-expansion-panel
+                            v-for="(question, index) in selectedSlide.quiz"
+                            :key="`${question.question}-${index}`"
+                          >
+                            <v-expansion-panel-title>
+                              <div class="d-flex flex-column">
+                                <span>{{ index + 1 }}. {{ question.question }}</span>
+                                <span class="text-caption text-medium-emphasis">{{ question.type }}</span>
+                              </div>
+                            </v-expansion-panel-title>
+                            <v-expansion-panel-text>
+                              <div v-if="question.description" class="mb-3 text-body-2">
+                                {{ question.description }}
+                              </div>
+                              <v-list v-if="question.answers?.length" density="compact" class="py-0 mb-3">
+                                <v-list-item
+                                  v-for="(answer, answerIndex) in question.answers"
+                                  :key="`${answer.answer}-${answerIndex}`"
+                                >
+                                  <v-list-item-title>
+                                    {{ answer.answer }}
+                                  </v-list-item-title>
+                                  <v-list-item-subtitle>
+                                    {{ answer.isCorrect ? "Correcta" : "Incorrecta" }}
+                                    <span v-if="answer.points"> · {{ answer.points }} pts</span>
+                                    <span v-if="answer.feedback"> · {{ answer.feedback }}</span>
+                                  </v-list-item-subtitle>
+                                </v-list-item>
+                              </v-list>
+                              <div v-if="question.explanation" class="text-body-2 text-medium-emphasis">
+                                Explicación: {{ question.explanation }}
+                              </div>
+                            </v-expansion-panel-text>
+                          </v-expansion-panel>
+                        </v-expansion-panels>
+                      </template>
+
+                      <div v-else class="text-medium-emphasis">
+                        Seleccioná una slide y ejecutá la generación para ver el quiz.
+                      </div>
                     </v-card>
                   </v-card-text>
                 </v-window-item>

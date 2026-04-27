@@ -1,8 +1,13 @@
 
 import {AbstractCrudRestProvider} from "@drax/crud-front";
-import type {ITraining, ITrainingBase} from '../interfaces/ITraining'
+import type {
+  ITraining,
+  ITrainingBase,
+  ITrainingQuizQuestion,
+  ITrainingSlide,
+} from '../interfaces/ITraining'
 
-type TrainingSlide = NonNullable<ITraining["slides"]>[number]
+type TrainingSlide = ITrainingSlide
 
 interface IAIResponse<T> {
   output: T
@@ -30,6 +35,11 @@ interface ITrainingThemeAIResult {
 
 interface ITrainingSlideAIResult {
   slide: TrainingSlide
+  rationale?: string
+}
+
+interface ITrainingQuizAIResult {
+  quiz: Array<ITrainingQuizQuestion>
   rationale?: string
 }
 
@@ -238,6 +248,78 @@ class TrainingProvider extends AbstractCrudRestProvider<ITraining, ITrainingBase
         }
       },
       operationTitle: 'training-improve-slide',
+      operationGroup: 'training-improve',
+    })
+  }
+
+  async generateQuizFromPrompt(training: ITraining, slide: TrainingSlide, prompt: string) {
+    return await this.promptAI<ITrainingQuizAIResult>({
+      systemPrompt: [
+        'Sos un experto en diseño instruccional y evaluación educativa.',
+        'Debés generar un quiz útil para una slide puntual de una capacitación.',
+        'Respondé con JSON válido.',
+        'El quiz debe evaluar comprensión real del contenido de la slide, sin inventar contexto ajeno.',
+        'Generá preguntas claras, concretas y consistentes con el nivel del material.',
+        'Podés usar tipos single_choice, multiple_choice y open_text.',
+        'Cuando uses single_choice o multiple_choice, incluí answers con al menos una opción correcta.',
+        'Cuando uses open_text, no incluyas answers salvo que sea estrictamente necesario.',
+        'La explicación debe ayudar a reforzar el aprendizaje.',
+        'No agregues markdown fuera del JSON.',
+      ].join('\n'),
+      userInput: [
+        `Training: ${training.name}`,
+        training.description ? `Descripción: ${training.description}` : '',
+        training.category ? `Categoría: ${training.category}` : '',
+        training.globalSlideCss ? `Tema CSS actual:\n${training.globalSlideCss}` : '',
+        `Slide seleccionada:\n${JSON.stringify(slide, null, 2)}`,
+        `Pedido del usuario: ${prompt}`,
+      ].filter(Boolean).join('\n\n'),
+      jsonSchema: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'training_quiz_result',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['quiz', 'rationale'],
+            properties: {
+              rationale: {type: 'string'},
+              quiz: {
+                type: 'array',
+                minItems: 1,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['question', 'description', 'type', 'answers', 'required', 'explanation'],
+                  properties: {
+                    question: {type: 'string'},
+                    description: {type: 'string'},
+                    type: {type: 'string', enum: ['single_choice', 'multiple_choice', 'open_text']},
+                    answers: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        additionalProperties: false,
+                        required: ['answer', 'points', 'isCorrect', 'feedback'],
+                        properties: {
+                          answer: {type: 'string'},
+                          points: {type: 'number'},
+                          isCorrect: {type: 'boolean'},
+                          feedback: {type: 'string'},
+                        }
+                      }
+                    },
+                    required: {type: 'boolean'},
+                    explanation: {type: 'string'},
+                  }
+                }
+              },
+            }
+          }
+        }
+      },
+      operationTitle: 'training-generate-quiz',
       operationGroup: 'training-improve',
     })
   }

@@ -1,4 +1,44 @@
 
+interface ITrainingFile {
+    filename: string
+    filepath: string
+    size: number
+    mimetype?: string
+    url: string
+}
+
+interface ITrainingFileReference {
+    label?: string
+    file: ITrainingFile
+}
+
+interface ITrainingQuizAnswer {
+    answer: string
+    points?: number
+    isCorrect?: boolean
+    feedback?: string
+}
+
+interface ITrainingQuizQuestion {
+    question: string
+    description?: string
+    type: 'single_choice' | 'multiple_choice' | 'open_text' | string
+    answers?: Array<ITrainingQuizAnswer>
+    required?: boolean
+    explanation?: string
+}
+
+interface ITrainingSlide {
+    title: string
+    subtitle?: string
+    content: string
+    contentType: string
+    files?: Array<ITrainingFile>
+    speakerNotes?: string
+    quiz?: Array<ITrainingQuizQuestion>
+    enabled?: boolean
+}
+
 interface ITrainingBase {
     name: string
     slug?: string
@@ -8,44 +48,8 @@ interface ITrainingBase {
     tags?: Array<string>
     author?: string
     globalSlideCss?: string
-    files?: Array<{
-        label?: string
-        file: {
-            filename: string,
-            filepath: string,
-            size: number,
-            mimetype?: string,
-            url: string
-        }
-    }>
-    slides?: Array<{
-        title: string
-        subtitle?: string
-        content: string
-    contentType: string
-    files?: Array<{
-                filename: string,
-                filepath: string,
-                size: number,
-                mimetype?: string,
-                url: string
-                }>
-    speakerNotes?: string
-    quiz?: Array<{
-    question: string
-    description?: string
-    type: string
-    answers?: Array<{
-    answer: string
-    points?: number
-    isCorrect?: boolean
-    feedback?: string
-    }>
-    required?: boolean
-    explanation?: string
-    }>
-    enabled?: boolean
-    }>
+    files?: Array<ITrainingFileReference>
+    slides?: Array<ITrainingSlide>
     primaryColor?: string
     coverImageUrl?: string
     isPublic?: boolean
@@ -55,64 +59,16 @@ interface ITrainingBase {
     updatedAt?: Date
 }
 
-interface ITraining {
+interface ITraining extends ITrainingBase {
     _id: string
-    name: string
-    slug?: string
-    description?: string
-    status: string
-    category?: string
-    tags?: Array<string>
-    author?: string
-    globalSlideCss?: string
-    files?: Array<{
-        label?: string
-        file: {
-            filename: string,
-            filepath: string,
-            size: number,
-            mimetype?: string,
-            url: string
-        }
-    }>
-    slides?: Array<{
-        title: string
-        subtitle?: string
-        content: string
-    contentType: string
-    files?: Array<{
-                filename: string,
-                filepath: string,
-                size: number,
-                mimetype?: string,
-                url: string
-                }>
-    speakerNotes?: string
-    quiz?: Array<{
-    question: string
-    description?: string
-    type: string
-    answers?: Array<{
-    answer: string
-    points?: number
-    isCorrect?: boolean
-    feedback?: string
-    }>
-    required?: boolean
-    explanation?: string
-    }>
-    enabled?: boolean
-    }>
-    primaryColor?: string
-    coverImageUrl?: string
-    isPublic?: boolean
-    publishedAt?: Date
-    metadata?: {}
-    createdAt?: Date
-    updatedAt?: Date
 }
 
 export type {
-ITrainingBase, 
-ITraining
+    ITrainingBase,
+    ITraining,
+    ITrainingFile,
+    ITrainingFileReference,
+    ITrainingQuizAnswer,
+    ITrainingQuizQuestion,
+    ITrainingSlide,
 }
